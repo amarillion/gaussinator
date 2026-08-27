@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#faf8ef" />
+  <title>RREF — Row Reduction Game</title>
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div id="title-box">
+        <h1>RREF</h1>
+        <div id="size-label" class="sub">2×3</div>
+      </div>
+      <div id="stats">
+        <div class="stat"><span>Level</span><strong id="level-label">1</strong></div>
+        <div class="stat"><span>Moves</span><strong id="moves-label">0</strong></div>
+        <div class="stat"><span>Par</span><strong id="par-label">—</strong></div>
+        <div class="stat"><span>Best</span><strong id="best-label">—</strong></div>
+      </div>
+      <div id="header-buttons">
+        <button id="btn-tutorial" class="icon-btn" title="How to play">?</button>
+        <button id="btn-sound" class="icon-btn" title="Sound">🔊</button>
+      </div>
+    </header>
+
+    <div id="board-wrap">
+      <div id="board"></div>
+      <div id="badge" class="badge"></div>
+      <div id="hint-box" class="hint-box hidden"></div>
+    </div>
+
+    <div id="kbar">
+      <div class="k-label">k = <span id="k-value">1</span></div>
+      <div class="k-controls">
+        <button class="qbtn" data-k="1/2">½</button>
+        <button class="qbtn" data-k="1/3">⅓</button>
+        <button class="qbtn" data-k="2">2</button>
+        <button class="qbtn" data-k="3">3</button>
+        <button class="qbtn" data-k="-1">−1</button>
+        <button class="qbtn" id="k-back" title="Backspace">⌫</button>
+        <button class="qbtn" id="k-clear" title="Reset to 1">C</button>
+      </div>
+    </div>
+
+    <div id="toolbar">
+      <button id="btn-scale" class="op">×k<small>Scale row</small></button>
+      <button id="btn-add" class="op">+k<small>Add to row</small></button>
+      <button id="btn-sub" class="op">−k<small>Subtract</small></button>
+      <button id="btn-swap-up" class="nav">▲<small>Swap up</small></button>
+      <button id="btn-swap-down" class="nav">▼<small>Swap down</small></button>
+      <button id="btn-undo" class="util">↩<small>Undo</small></button>
+      <button id="btn-hint" class="util">💡<small>Hint</small></button>
+      <button id="btn-restart" class="util">↻<small>Restart</small></button>
+    </div>
+
+    <footer id="help-line">
+      Tap a row to select · swipe ↑/↓ to swap · keys: ↑↓ move · ⇧↑↓ swap · A/S combine · M scale · U undo · H hint
+    </footer>
+  </div>
+
+  <div id="win-overlay" class="overlay hidden">
+    <div class="overlay-card">
+      <h2>Level complete!</h2>
+      <div id="win-stars" class="stars">★★★</div>
+      <p id="win-moves"></p>
+      <p id="win-best"></p>
+      <button id="btn-next" class="big-btn">Next level (Enter)</button>
+    </div>
+  </div>
+
+  <div id="tutorial-overlay" class="overlay hidden">
+    <div class="overlay-card">
+      <h2>How to play</h2>
+      <div class="tut-body">
+        <p><b>Goal:</b> turn the matrix into <b>reduced row echelon form</b> (RREF):</p>
+        <ul>
+          <li>each leading (first non-zero) entry of a row is 1,</li>
+          <li>leading entries form a staircase from top-left to bottom-right,</li>
+          <li>every column with a leading 1 has zeros everywhere else,</li>
+          <li>all-zero rows sit at the bottom.</li>
+        </ul>
+        <p><b>Legal moves</b> (elementary row operations):</p>
+        <ul>
+          <li><b>Swap</b> two rows,</li>
+          <li><b>Multiply</b> a row by any non-zero number k,</li>
+          <li><b>Add</b> k × one row to another row (use k = −1 to subtract).</li>
+        </ul>
+        <p><b>Keyboard:</b></p>
+        <ul class="keys">
+          <li><kbd>↑</kbd> <kbd>↓</kbd> or <kbd>K</kbd> <kbd>J</kbd> — select row</li>
+          <li><kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> — move the selected row</li>
+          <li>type e.g. <kbd>-</kbd><kbd>3</kbd><kbd>/</kbd><kbd>4</kbd> — set k</li>
+          <li><kbd>M</kbd> — multiply selected row by k</li>
+          <li><kbd>A</kbd> / <kbd>S</kbd> — add / subtract k×row, then pick target with <kbd>↑</kbd><kbd>↓</kbd> and <kbd>Enter</kbd></li>
+          <li><kbd>U</kbd> undo · <kbd>H</kbd> hint · <kbd>R</kbd> restart · <kbd>Esc</kbd> cancel / reset k</li>
+        </ul>
+        <p><b>Touch:</b> tap a row to select it, swipe a row up/down to swap it, then use the buttons below the board.</p>
+      </div>
+      <button id="btn-tutorial-close" class="big-btn">Start playing</button>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
