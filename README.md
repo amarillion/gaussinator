@@ -77,7 +77,7 @@ at the bottom.
 
 ```
 src/
-  main.ts             bootstrap and wiring
+  main.ts             bootstrap: custom element registration
   audio.ts            WebAudio sound effects
   styles.css          theme, board, tiles, overlays
   math/
@@ -88,10 +88,10 @@ src/
     state.ts          game state: moves, undo, k rail, win detection
     hint.ts           exact next-step hint engine
   ui/
-    input.ts          keyboard, buttons
     components/
-      factor-dial.ts  <factor-dial> multiplier dial custom element
+      game-app.ts     <game-app> root controller component
       rref-board.ts   <rref-board> matrix board + lift rail custom element
+      factor-dial.ts  <factor-dial> multiplier dial custom element
       game-hud.ts     <game-hud> mode label, badge, hint box
       game-stats.ts   <game-stats> header stat tiles
       win-overlay.ts  <win-overlay> level-complete modal

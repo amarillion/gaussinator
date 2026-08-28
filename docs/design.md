@@ -202,7 +202,7 @@ Every successful move pushes a history snapshot (`rows`, `order`, `moves`,
 
 ```
 src/
-  main.ts             bootstrap, wiring, persistence, resize handling
+  main.ts             bootstrap: custom element registration
   audio.ts            WebAudio blips (no assets), sound toggle
   styles.css          theme, board, tiles, overlays, responsive layout
   math/
@@ -213,10 +213,10 @@ src/
     state.ts          Game class: moves, undo, k rail, win detection
     hint.ts           next-step hint engine
   ui/
-    input.ts          keyboard, buttons
     components/
-      factor-dial.ts  <factor-dial> multiplier dial custom element
+      game-app.ts     <game-app> root controller component
       rref-board.ts   <rref-board> matrix board + lift rail custom element
+      factor-dial.ts  <factor-dial> multiplier dial custom element
       game-hud.ts     <game-hud> mode label, badge, hint box
       game-stats.ts   <game-stats> header stat tiles
       win-overlay.ts  <win-overlay> level-complete modal
@@ -226,9 +226,9 @@ index.html            static UI shell (all element ids live here)
 
 ### 8.1 Data flow
 
-1. `main.ts` creates a `Game(levelIndex, seed)`.
-2. Input handlers (`input.ts`) and custom-element events call `Game` methods
-   and then `afterAction()`.
+1. `<game-app>` creates a `Game(levelIndex, seed)`.
+2. Keyboard handlers, toolbar buttons, and child-component custom events call
+   `Game` methods and then `afterAction()`.
 3. `afterAction()` pushes a fresh view model into the custom elements:
    `<rref-board>` (tiles, lift rail), `<factor-dial>`, `<game-hud>`,
    `<game-stats>`, and the overlays; it also clears stale hints when moves
