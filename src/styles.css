@@ -208,14 +208,18 @@ header {
 
 .hidden { display: none !important; }
 
-/* Left multiplier rail: a column of factor tiles with 1 in the center. */
+/* Left multiplier dial: a column of factor tiles with 1 in the center,
+   scrubbed vertically with a drag. */
 #factor-rail {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   flex: 0 0 auto;
+  touch-action: none;
 }
+
+.k-tiles-wrap { position: relative; }
 
 .k-sign {
   width: 44px;
@@ -254,12 +258,26 @@ header {
 .k-tile.sel {
   background: var(--accent);
   color: #fff;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65);
 }
 
 .k-tile.sel.neg {
   background: #3c3a32;
 }
+
+.k-dial-handle {
+  position: absolute;
+  left: 0;
+  width: 44px;
+  height: var(--rail-tile-h, 20px);
+  border: 2px solid #fff;
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: 0 0 0 4px var(--accent);
+  pointer-events: none;
+  transition: top 0.12s ease, height 0.12s ease;
+}
+
+.k-dial-handle.dragging { transition: none; }
 
 .k-sign:active, .k-tile:active { transform: scale(0.94); }
 

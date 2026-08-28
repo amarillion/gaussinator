@@ -30,7 +30,10 @@
       <div id="board-row">
         <div id="factor-rail" class="factor-rail" aria-label="Multiplier">
           <button id="k-sign" class="k-sign" type="button" title="Toggle negative factor (minus key)">±</button>
-          <div id="k-tiles" class="k-tiles"></div>
+          <div id="k-tiles-wrap" class="k-tiles-wrap">
+            <div id="k-tiles" class="k-tiles"></div>
+            <div id="k-dial-handle" class="k-dial-handle" aria-hidden="true"></div>
+          </div>
         </div>
         <div id="board-stack">
           <div id="board"></div>
@@ -94,7 +97,7 @@
           <li><kbd>→</kbd> — lift the selected row to the right; the lifted copy is always the original row × the selected factor; <kbd>↑</kbd>/<kbd>↓</kbd> align it with a target row and <kbd>Enter</kbd> adds it (<kbd>Esc</kbd> or <kbd>←</kbd> cancels)</li>
           <li><kbd>U</kbd> undo · <kbd>H</kbd> hint · <kbd>R</kbd> restart · <kbd>Esc</kbd> cancel / reset k</li>
         </ul>
-        <p><b>Touch:</b> tap a row to select it, swipe a row up/down to swap it, and tap a tile on the left rail (or the ± button) to pick a multiplier. The toolbar ×k button starts/applies in-place scaling. While a row is lifted, tap the target row to apply the lifted copy.</p>
+        <p><b>Touch:</b> tap a row to select it, swipe a row up/down to swap it, and drag up/down on the left dial to scrub the multiplier (tap a tile to jump to it, ± for negative). The toolbar ×k button starts/applies in-place scaling. While a row is lifted, tap the target row to apply the lifted copy.</p>
       </div>
       <button id="btn-tutorial-close" class="big-btn">Start playing</button>
     </div>

@@ -1,4 +1,4 @@
-import { Game } from "../game/state";
+import { Game, K_TILES } from "../game/state";
 import { sfx } from "../audio";
 
 export interface InputContext {
@@ -14,6 +14,7 @@ export interface InputContext {
 export function setupInput(ctx: InputContext): void {
 	setupKeyboard(ctx);
 	setupButtons(ctx);
+	setupKDial(ctx);
 	setupBoardTouch(ctx);
 }
 
@@ -257,17 +258,77 @@ function setupButtons(ctx: InputContext): void {
 		sfx.select();
 		ctx.afterAction();
 	});
+}
 
-	const rail = document.getElementById("k-tiles");
-	if (rail) {
-		rail.addEventListener("click", e => {
-			const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-k-index]");
-			if (!btn) return;
-			ctx.getGame().setKIndex(Number(btn.dataset.kIndex));
+/**
+ * The left multiplier column doubles as a draggable vertical dial: drag up or
+ * down anywhere on it to scrub through the factor tiles; tap a tile to jump
+ * straight to it. Keyboard PgUp/PgDn keeps working identically.
+ */
+function setupKDial(ctx: InputContext): void {
+	const rail = document.getElementById("factor-rail");
+	if (!rail) return;
+
+	let pointerId = -1;
+	let startY = 0;
+	let startIndex = 0;
+	let moved = false;
+	let suppressClick = false;
+
+	const step = (): number => {
+		const tile = rail.querySelector<HTMLElement>(".k-tile");
+		if (!tile) return 20;
+		return tile.offsetHeight + 2; // tile height + .k-tiles gap
+	};
+
+	rail.addEventListener("pointerdown", e => {
+		const g = ctx.getGame();
+		if (g.won) return;
+		if ((e.target as HTMLElement).closest("#k-sign")) return;
+		pointerId = e.pointerId;
+		startY = e.clientY;
+		startIndex = g.kIndex;
+		moved = false;
+		suppressClick = false;
+		document.getElementById("k-dial-handle")?.classList.add("dragging");
+		e.preventDefault();
+	});
+
+	rail.addEventListener("pointermove", e => {
+		if (pointerId === -1 || e.pointerId !== pointerId) return;
+		const g = ctx.getGame();
+		const index = Math.round(startIndex + (e.clientY - startY) / step());
+		const clamped = Math.max(0, Math.min(K_TILES.length - 1, index));
+		if (clamped !== g.kIndex) {
+			g.setKIndex(clamped);
+			moved = true;
 			sfx.select();
 			ctx.afterAction();
-		});
-	}
+		}
+		e.preventDefault();
+	});
+
+	const end = (e: PointerEvent): void => {
+		if (e.pointerId !== pointerId) return;
+		pointerId = -1;
+		suppressClick = moved;
+		document.getElementById("k-dial-handle")?.classList.remove("dragging");
+	};
+
+	rail.addEventListener("pointerup", end);
+	rail.addEventListener("pointercancel", end);
+
+	rail.addEventListener("click", e => {
+		if (suppressClick) {
+			suppressClick = false;
+			return;
+		}
+		const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-k-index]");
+		if (!btn) return;
+		ctx.getGame().setKIndex(Number(btn.dataset.kIndex));
+		sfx.select();
+		ctx.afterAction();
+	});
 }
 
 function setupBoardTouch(ctx: InputContext): void {

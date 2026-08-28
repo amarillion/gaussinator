@@ -194,6 +194,13 @@ export class Renderer {
 		this.lastRailIndex = game.kIndex;
 		const sign = document.getElementById("k-sign");
 		if (sign) sign.textContent = game.kNegative ? "−" : "±";
+
+		const handle = document.getElementById("k-dial-handle");
+		const tile = this.factorTiles[game.kIndex];
+		if (handle && tile) {
+			handle.style.top = `${tile.offsetTop}px`;
+			handle.style.height = `${tile.offsetHeight}px`;
+		}
 	}
 
 	private updateModeLabel(game: Game): void {

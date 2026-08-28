@@ -70,7 +70,7 @@ at the bottom.
 
 - **Tap** a row to select it
 - **Swipe** a row up/down to swap it with its neighbor
-- Tap a tile on the left multiplier rail (or the `±` button) to pick a factor; the toolbar `×k` button starts/applies in-place scaling
+- **Drag** up/down on the left multiplier dial to scrub the factor (tap a tile to jump to it, `±` for negative); the toolbar `×k` button starts/applies in-place scaling
 - While a row is lifted, tap the target row to apply the lifted copy
 
 ## Project structure
