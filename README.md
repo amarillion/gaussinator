@@ -1,4 +1,4 @@
-# RREF — A 2048-style Row-Reduction Game
+# Gaussinator — A 2048-style Row-Reduction Game
 
 A mobile-friendly HTML5 + TypeScript game that teaches linear algebra: turn a
 random matrix into **reduced row echelon form (RREF)** using elementary row
@@ -69,7 +69,8 @@ at the bottom.
 ### Touch
 
 - **Tap** a row to select it
-- **Swipe** a row up/down to swap it with its neighbor
+- **Swipe** up/down to swap rows with a neighbor
+- **Swipe right** to shift (lift) a row; **swipe left** on the original row to cancel the shift or on another row to apply it
 - **Drag** up/down on the left multiplier dial to scrub the factor (tap a tile to jump to it, `±` for negative); the toolbar `×k` button starts/applies in-place scaling
 - While a row is lifted, tap the target row to apply the lifted copy
 

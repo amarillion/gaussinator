@@ -168,15 +168,51 @@ export class GameApp extends HTMLElement {
 		});
 		this.board.addEventListener("row-swipe", e => {
 			if (this.game.won) return;
-			const { pos, direction } = (e as CustomEvent<{ pos: number, direction: number }>).detail;
+			const { pos, direction } = (e as CustomEvent<{ pos: number, direction: "up" | "down" | "left" | "right" }>).detail;
+
+			if (direction === "right") {
+				// Swipe right shifts (lifts) the swiped row.
+				if (this.game.lift) {
+					sfx.invalid();
+				} else if (this.game.pendingScale) {
+					sfx.invalid();
+				} else {
+					this.game.cursorPos = pos;
+					if (this.game.liftRow()) sfx.lift();
+					else sfx.invalid();
+				}
+				this.afterAction();
+				return;
+			}
+
+			if (direction === "left") {
+				// Swipe left on the source row cancels; on any other row it applies.
+				if (this.game.lift) {
+					if (this.game.lift.sourcePos === pos) {
+						this.game.cancelLift();
+						sfx.select();
+					} else {
+						this.game.setLiftTarget(pos);
+						if (this.game.applyLift()) sfx.combine();
+						else sfx.invalid();
+					}
+				} else {
+					sfx.invalid();
+				}
+				this.afterAction();
+				return;
+			}
+
+			// Vertical swipes move the lifted copy or swap rows.
+			const delta = direction === "up" ? -1 : 1;
 			if (this.game.lift) {
-				this.game.moveLift(direction);
+				this.game.moveLift(delta);
 				sfx.select();
 			} else if (this.game.pendingScale) {
 				sfx.invalid();
 			} else {
 				this.game.cursorPos = pos;
-				if (this.game.swapCursor(direction)) sfx.move();
+				if (this.game.swapCursor(delta)) sfx.move();
 				else sfx.invalid();
 			}
 			this.afterAction();

@@ -34,8 +34,8 @@ export default defineConfig({
 				'**/*',
 			],
 			manifest: {
-				name: 'Linear Algebra Game',
-				short_name: 'linalg',
+				name: 'Gaussinator',
+				short_name: 'gauss',
 
 				// URL relative to manifest file
 				start_url: './',

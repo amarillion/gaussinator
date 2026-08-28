@@ -221,9 +221,14 @@ export class RrefBoard extends HTMLElement {
 		if (!this.down || e.pointerId !== this.down.id) return;
 		const dy = e.clientY - this.down.y;
 		const dx = e.clientX - this.down.x;
-		if (!this.swiped && Math.abs(dy) > 18 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+		const ay = Math.abs(dy);
+		const ax = Math.abs(dx);
+		if (!this.swiped && ay > 18 && ay > ax * 1.5) {
 			this.swiped = true;
-			this.emit("row-swipe", { pos: this.down.pos, direction: dy < 0 ? -1 : 1 });
+			this.emit("row-swipe", { pos: this.down.pos, direction: dy < 0 ? "up" : "down" });
+		} else if (!this.swiped && ax > 18 && ax > ay * 1.5) {
+			this.swiped = true;
+			this.emit("row-swipe", { pos: this.down.pos, direction: dx < 0 ? "left" : "right" });
 		}
 	};
 

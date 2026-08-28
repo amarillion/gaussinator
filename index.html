@@ -5,13 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#faf8ef" />
   <link rel="icon" type="image/png" href="./favicon.png" />
-  <title>RREF — Row Reduction Game</title>
+  <title>Gaussinator — Row Reduction Game</title>
 </head>
 <body>
   <game-app id="app">
     <header id="header">
       <div id="title-box">
-        <h1>RREF</h1>
+        <h1>Gaussinator</h1>
         <div id="size-label" class="sub">2×3</div>
       </div>
       <game-stats id="stats"></game-stats>
@@ -40,7 +40,7 @@
     </div>
 
     <footer id="help-line">
-      Tap a row to select · swipe ↑/↓ to swap · keys: ↑↓ select · PgUp/PgDn factor · − negate · M scale · → lift row · Enter apply · Esc cancel · U undo · H hint
+      Tap to select · swipe ↑/↓ swap · swipe → shift · swipe ← apply/cancel · keys: ↑↓ select · PgUp/PgDn factor · − negate · M scale · Enter apply · Esc cancel · U undo · H hint
     </footer>
 
     <win-overlay id="win-overlay"></win-overlay>
@@ -72,7 +72,7 @@
           <li><kbd>→</kbd> — lift the selected row to the right; the lifted copy is always the original row × the selected factor; <kbd>↑</kbd>/<kbd>↓</kbd> align it with a target row and <kbd>Enter</kbd> adds it (<kbd>Esc</kbd> or <kbd>←</kbd> cancels)</li>
           <li><kbd>U</kbd> undo · <kbd>H</kbd> hint · <kbd>R</kbd> restart · <kbd>Esc</kbd> cancel / reset k</li>
         </ul>
-        <p><b>Touch:</b> tap a row to select it, swipe a row up/down to swap it, and drag up/down on the left dial to scrub the multiplier (tap a tile to jump to it, ± for negative). The toolbar ×k button starts/applies in-place scaling. While a row is lifted, tap the target row to apply the lifted copy.</p>
+        <p><b>Touch:</b> tap a row to select it, swipe up/down to swap rows, swipe right to shift (lift) a row, then swipe left on the original row to cancel or on another row to apply. Drag up/down on the left dial to scrub the multiplier (tap a tile to jump to it, ± for negative). The toolbar ×k button starts/applies in-place scaling. While a row is lifted, tap the target row to apply the lifted copy.</p>
       </div>
       <button class="big-btn tutorial-close" type="button">Start playing</button>
     </div>

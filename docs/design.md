@@ -1,4 +1,4 @@
-# Design Document — RREF Row-Reduction Game
+# Design Document — Gaussinator
 
 ## 1. Overview
 
@@ -170,7 +170,9 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 ### 7.2 Touch
 
 - Tap a row to select it.
-- Swipe a row up/down to swap it with its neighbor (the 2048 gesture).
+- Swipe up/down to swap rows with a neighbor (the 2048 gesture).
+- Swipe right to shift (lift) a row; swipe left on the original row to cancel
+  the shift or on another row to apply it.
 - Drag up/down on the left multiplier dial to scrub the factor (tap a tile to
   jump to it, `±` for negative); the toolbar `×k` button starts/applies
   in-place scaling.
