@@ -74,13 +74,22 @@ export class RrefBoard extends HTMLElement {
 	}
 
 	layout(n: number, m: number): void {
-		const maxW = Math.min(window.innerWidth * 0.94, 560);
+		// The board sits in the left half of the container; the right half is
+		// reserved for the lifted-copy rail, so the whole board + rail fits on
+		// screen without horizontal overflow.
+		const wrap = this.parentElement?.parentElement as HTMLElement | null;
+		const containerW = wrap ? wrap.clientWidth : window.innerWidth;
+		const dialW = 44 + 10; // factor dial width + board-row gap
+		const widthBudget = Math.max(96, containerW / 2 - dialW);
 		const maxH = Math.max(240, window.innerHeight - 330);
-		const tw = Math.max(44, Math.min(maxW / m, maxH / n, 108));
-		const th = Math.round(tw * 0.92);
+		let tw = Math.max(30, Math.min(widthBudget / m, maxH / n, 108));
 		this.gap = Math.max(4, Math.round(tw * 0.12));
+		if (m * tw + (m + 1) * this.gap > widthBudget) {
+			tw = Math.max(30, (widthBudget - (m + 1) * this.gap) / m);
+			this.gap = Math.max(4, Math.round(tw * 0.12));
+		}
 		this.tileW = Math.floor(tw);
-		this.tileH = th;
+		this.tileH = Math.round(tw * 0.92);
 		this.style.width = `${m * this.tileW + (m + 1) * this.gap}px`;
 		this.style.height = `${n * this.tileH + (n + 1) * this.gap}px`;
 		this.style.setProperty("--tile-font", `${Math.max(13, Math.floor(this.tileW * 0.38))}px`);

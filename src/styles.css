@@ -14,6 +14,7 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  overflow: hidden;
 }
 
 body {
@@ -28,11 +29,12 @@ body {
 game-app {
   max-width: 620px;
   margin: 0 auto;
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+  gap: 6px;
+  padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
 }
 
 header {
@@ -79,11 +81,11 @@ game-stats { display: flex; gap: 6px; margin-left: auto; }
 
 .icon-btn:active { transform: scale(0.94); }
 
-#board-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+#board-wrap { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
 
-game-hud { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+game-hud { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 
-#board-row { position: relative; display: flex; align-items: center; gap: 10px; }
+#board-row { position: relative; display: flex; align-items: center; justify-content: flex-start; gap: 10px; }
 
 rref-board {
   position: relative;
@@ -260,7 +262,7 @@ factor-dial[disabled] {
 .k-tile {
   width: 44px;
   flex: 1 1 0;
-  min-height: 12px;
+  min-height: 8px;
   border: none;
   border-radius: 5px;
   background: #cdc1b4;
@@ -312,11 +314,11 @@ factor-dial[disabled] {
 #toolbar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 #toolbar button {
-  min-height: 52px;
+  min-height: 44px;
   border: none;
   border-radius: 10px;
   font-size: 16px;
