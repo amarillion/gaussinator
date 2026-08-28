@@ -4,10 +4,12 @@ import { getHint } from "./game/hint";
 import { Renderer } from "./ui/render";
 import { setupInput } from "./ui/input";
 import { FactorDial } from "./ui/components/factor-dial";
+import { RrefBoard } from "./ui/components/rref-board";
 import { initTutorial, showTutorial, hideTutorial } from "./ui/tutorial";
-import { setSound } from "./audio";
+import { setSound, sfx } from "./audio";
 
 customElements.define("factor-dial", FactorDial);
+customElements.define("rref-board", RrefBoard);
 
 const seedBase = (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 
@@ -15,7 +17,8 @@ let game: Game;
 let hintRows: number[] | null = null;
 let lastMoves = 0;
 
-const renderer = new Renderer(document.getElementById("board")!);
+const renderer = new Renderer();
+const board = document.getElementById("board") as RrefBoard;
 const factorDial = document.getElementById("factor-dial") as FactorDial | null;
 
 const bestKey = (n: number, m: number) => `rref.best.${n}x${m}`;
@@ -43,7 +46,7 @@ function startLevel(index: number): void {
 	};
 	hintRows = null;
 	lastMoves = game.moves;
-	renderer.setBoardSize(game.n, game.m);
+	board.setBoardSize(game.n, game.m);
 	afterAction();
 }
 
@@ -53,9 +56,18 @@ function afterAction(): void {
 		game.hintText = null;
 		lastMoves = game.moves;
 	}
-	renderer.render(game, hintRows);
+	board.render({
+		rows: game.rows,
+		order: game.order,
+		cursorPos: game.cursorPos,
+		lift: game.lift,
+		pendingScale: game.pendingScale,
+		hintRows,
+	});
+	board.toggleAttribute("disabled", game.won);
 	factorDial?.setSelection(game.kIndex, game.kNegative);
 	factorDial?.toggleAttribute("disabled", game.won);
+	renderer.renderHud(game);
 	renderer.setHint(game.hintText);
 	if (game.won) {
 		renderer.showWin(computeStars(game.moves, game.par), game.moves, game.par, game.best, game.newRecord);
@@ -126,8 +138,42 @@ factorDial?.addEventListener("factor-sign", () => {
 	afterAction();
 });
 
+board.addEventListener("row-tap", e => {
+	if (game.won) return;
+	const pos = (e as CustomEvent<{ pos: number }>).detail.pos;
+	if (game.lift) {
+		if (game.lift.sourcePos === pos) {
+			game.cancelLift();
+			sfx.select();
+		} else {
+			game.setLiftTarget(pos);
+			if (game.applyLift()) sfx.combine();
+			else sfx.invalid();
+		}
+	} else {
+		game.cursorPos = pos;
+		sfx.select();
+	}
+	afterAction();
+});
+board.addEventListener("row-swipe", e => {
+	if (game.won) return;
+	const { pos, direction } = (e as CustomEvent<{ pos: number, direction: number }>).detail;
+	if (game.lift) {
+		game.moveLift(direction);
+		sfx.select();
+	} else if (game.pendingScale) {
+		sfx.invalid();
+	} else {
+		game.cursorPos = pos;
+		if (game.swapCursor(direction)) sfx.move();
+		else sfx.invalid();
+	}
+	afterAction();
+});
+
 window.addEventListener("resize", () => {
-	renderer.layout(game.n, game.m);
+	board.layout(game.n, game.m);
 	afterAction();
 });
 

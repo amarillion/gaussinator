@@ -88,11 +88,12 @@ src/
     state.ts          game state: moves, undo, k rail, win detection
     hint.ts           exact next-step hint engine
   ui/
-    render.ts         board rendering and animations
-    input.ts          keyboard, buttons, touch/swipe
+    render.ts         HUD, stats, badge, overlays
+    input.ts          keyboard, buttons
     tutorial.ts       first-run tutorial overlay
     components/
       factor-dial.ts  <factor-dial> multiplier dial custom element
+      rref-board.ts   <rref-board> matrix board + lift rail custom element
 origData/
   icon.svg            source logo (3x3 matrix, lifted middle row)
   makefile            rasterizes the PWA icons into public/ (run `make`)

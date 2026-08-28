@@ -83,17 +83,18 @@ header {
 
 #board-row { position: relative; display: flex; align-items: center; gap: 10px; }
 
-#board-stack { position: relative; }
-
-#board {
+rref-board {
   position: relative;
+  display: block;
   background: var(--board);
   border-radius: 8px;
   touch-action: none;
 }
 
+rref-board[disabled] { pointer-events: none; }
+
 /* The side rail where a lifted row copy appears, right of the board. */
-#lift-rail {
+.lift-rail {
   position: absolute;
   left: 100%;
   margin-left: 8px;
@@ -107,7 +108,7 @@ header {
   pointer-events: none;
 }
 
-#lift-rail .tile { pointer-events: none; }
+.lift-rail .tile { pointer-events: none; }
 
 .cell.lift {
   opacity: 0.9;

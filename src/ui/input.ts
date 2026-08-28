@@ -14,7 +14,6 @@ export interface InputContext {
 export function setupInput(ctx: InputContext): void {
 	setupKeyboard(ctx);
 	setupButtons(ctx);
-	setupBoardTouch(ctx);
 }
 
 function setupKeyboard(ctx: InputContext): void {
@@ -252,73 +251,4 @@ function setupButtons(ctx: InputContext): void {
 	on("btn-next", () => ctx.nextLevel());
 	on("btn-tutorial", () => ctx.showTutorial());
 	on("btn-sound", () => ctx.toggleSound());
-}
-
-function setupBoardTouch(ctx: InputContext): void {
-	const board = document.getElementById("board");
-	if (!board) return;
-
-	let down: { x: number, y: number, pos: number, id: number } | null = null;
-	let swiped = false;
-
-	board.addEventListener("pointerdown", e => {
-		const g = ctx.getGame();
-		if (g.won) return;
-		const tile = (e.target as HTMLElement).closest<HTMLElement>(".tile");
-		if (!tile) return;
-		const rowId = Number(tile.dataset.row);
-		const pos = g.order.indexOf(rowId);
-		down = { x: e.clientX, y: e.clientY, pos, id: e.pointerId };
-		swiped = false;
-	});
-
-	board.addEventListener("pointermove", e => {
-		if (!down || e.pointerId !== down.id) return;
-		const dy = e.clientY - down.y;
-		const dx = e.clientX - down.x;
-		if (!swiped && Math.abs(dy) > 18 && Math.abs(dy) > Math.abs(dx) * 1.5) {
-			swiped = true;
-			const g = ctx.getGame();
-			if (!g.won) {
-				if (g.lift) {
-					g.moveLift(dy < 0 ? -1 : 1);
-					sfx.select();
-				} else if (!g.pendingScale) {
-					g.cursorPos = down.pos;
-					if (g.swapCursor(dy < 0 ? -1 : 1)) sfx.move();
-					else sfx.invalid();
-				} else {
-					sfx.invalid();
-				}
-				ctx.afterAction();
-			}
-		}
-	});
-
-	const finish = (e: PointerEvent): void => {
-		if (!down || e.pointerId !== down.id) return;
-		const g = ctx.getGame();
-		if (!swiped && !g.won) {
-			if (g.lift) {
-				if (g.lift.sourcePos === down.pos) {
-					g.cancelLift();
-					sfx.select();
-				} else {
-					g.setLiftTarget(down.pos);
-					if (g.applyLift()) sfx.combine();
-					else sfx.invalid();
-				}
-			} else {
-				g.cursorPos = down.pos;
-				sfx.select();
-			}
-			ctx.afterAction();
-		}
-		down = null;
-	};
-
-	board.addEventListener("pointerup", finish);
-	board.addEventListener("pointercancel", () => {
-		down = null;
-	});
 }

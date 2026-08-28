@@ -213,11 +213,12 @@ src/
     state.ts          Game class: moves, undo, k rail, win detection
     hint.ts           next-step hint engine
   ui/
-    render.ts         board tiles, animations, stats, overlays
-    input.ts          keyboard, buttons, board touch/swipe
+    render.ts         HUD, stats, badge, overlays
+    input.ts          keyboard, buttons
     tutorial.ts       first-run tutorial overlay
     components/
       factor-dial.ts  <factor-dial> multiplier dial custom element
+      rref-board.ts   <rref-board> matrix board + lift rail custom element
 index.html            static UI shell (all element ids live here)
 ```
 
