@@ -24,6 +24,29 @@ export interface Lift {
 	factor: Rational,
 }
 
+/** The multiplier rail: 9 … 2, 1, 1/2 … 1/9 (index 8 is the center 1). */
+export const K_TILES: readonly Rational[] = [
+	new Rational(9),
+	new Rational(8),
+	new Rational(7),
+	new Rational(6),
+	new Rational(5),
+	new Rational(4),
+	new Rational(3),
+	new Rational(2),
+	Rational.ONE,
+	new Rational(1, 2),
+	new Rational(1, 3),
+	new Rational(1, 4),
+	new Rational(1, 5),
+	new Rational(1, 6),
+	new Rational(1, 7),
+	new Rational(1, 8),
+	new Rational(1, 9),
+];
+
+export const K_CENTER_INDEX = 8;
+
 export function computeStars(moves: number, par: number): number {
 	if (moves <= par) return 3;
 	if (moves <= par + Math.ceil(par / 2)) return 2;
@@ -46,7 +69,12 @@ export class Game {
 	rows: Matrix;
 	order: number[];
 	cursorPos = 0;
-	kString = "1";
+	/** Selected multiplier-rail tile; `k` is always derived from this. */
+	kIndex = K_CENTER_INDEX;
+	/** True when the minus key toggled the rail factor negative. */
+	kNegative = false;
+	/** In-place scaling mode, started with M and confirmed with Enter. */
+	pendingScale = false;
 	lift: Lift | null = null;
 	history: Snapshot[] = [];
 	moves = 0;
@@ -78,6 +106,12 @@ export class Game {
 		return this.generated.start;
 	}
 
+	/** Current multiplier: the selected rail tile, optionally negated. */
+	get k(): Rational {
+		const r = K_TILES[this.kIndex];
+		return this.kNegative ? r.neg() : r;
+	}
+
 	displayMatrix(): Matrix {
 		return this.order.map(id => this.rows[id].map(x => x));
 	}
@@ -90,38 +124,31 @@ export class Game {
 		return isRREF(this.displayMatrix());
 	}
 
-	parseK(): Rational | null {
-		const r = Rational.parse(this.kString);
-		if (!r || r.isZero()) return null;
-		return r;
+	/** PgUp = -1, PgDn = +1. The lifted copy follows immediately. */
+	moveK(delta: number): void {
+		if (this.won) return;
+		this.kIndex = clamp(this.kIndex + delta, 0, K_TILES.length - 1);
+		this.syncLiftFactor();
 	}
 
-	setK(s: string): void {
-		this.kString = s;
+	/** Click/tap a rail tile directly. */
+	setKIndex(index: number): void {
+		if (this.won) return;
+		this.kIndex = clamp(Math.round(index), 0, K_TILES.length - 1);
+		this.syncLiftFactor();
 	}
 
-	appendK(ch: string): void {
-		let s = this.kString;
-		if (ch === "-") {
-			s = s.startsWith("-") ? s.slice(1) : "-" + s;
-		} else if (ch === "/") {
-			if (!s.includes("/") && !s.endsWith("/")) s += "/";
-		} else {
-			// digit
-			if (s === "1") s = ch;
-			else if (s === "-1") s = "-" + ch;
-			else if (s === "-") s = "-" + ch;
-			else s += ch;
-		}
-		if (s.length > 10) s = s.slice(0, 10);
-		if (s === "") s = "1";
-		this.kString = s;
+	/** Minus key: toggle the sign of the current factor. */
+	toggleKSign(): void {
+		if (this.won) return;
+		this.kNegative = !this.kNegative;
+		this.syncLiftFactor();
 	}
 
-	backspaceK(): void {
-		let s = this.kString.slice(0, -1);
-		if (s === "" || s === "-") s = "1";
-		this.kString = s;
+	resetK(): void {
+		this.kIndex = K_CENTER_INDEX;
+		this.kNegative = false;
+		this.syncLiftFactor();
 	}
 
 	moveCursor(delta: number): void {
@@ -130,11 +157,12 @@ export class Game {
 
 	liftRow(): boolean {
 		if (this.won || this.lift) return false;
+		this.pendingScale = false;
 		this.lift = {
 			sourceId: this.order[this.cursorPos],
 			sourcePos: this.cursorPos,
 			targetPos: this.cursorPos,
-			factor: Rational.ONE,
+			factor: this.k,
 		};
 		return true;
 	}
@@ -147,15 +175,6 @@ export class Game {
 	setLiftTarget(pos: number): void {
 		if (!this.lift) return;
 		this.lift.targetPos = clamp(pos, 0, this.n - 1);
-	}
-
-	/** Multiply the lifted copy by the pending multiplier k. */
-	multiplyLift(): boolean {
-		if (!this.lift || this.won) return false;
-		const k = this.parseK();
-		if (!k) return false;
-		this.lift.factor = this.lift.factor.mul(k);
-		return true;
 	}
 
 	/** Add the lifted copy to the row it is aligned with. */
@@ -176,12 +195,26 @@ export class Game {
 		this.lift = null;
 	}
 
+	/** M key: begin in-place scaling of the cursor row with the rail factor. */
+	startScaleMode(): boolean {
+		if (this.won || this.lift || this.pendingScale) return false;
+		this.pendingScale = true;
+		return true;
+	}
+
+	cancelScaleMode(): boolean {
+		if (!this.pendingScale) return false;
+		this.pendingScale = false;
+		return true;
+	}
+
+	/** Enter key while `pendingScale`: scale the cursor row by the rail factor. */
 	applyScale(): boolean {
-		if (this.won) return false;
-		const k = this.parseK();
-		if (!k) return false;
+		if (this.won || !this.pendingScale) return false;
+		const k = this.k;
 		this.pushHistory();
 		scaleRow(this.rows, this.order[this.cursorPos], k);
+		this.pendingScale = false;
 		this.finishMove();
 		return true;
 	}
@@ -211,9 +244,10 @@ export class Game {
 		this.moves = s.moves;
 		this.cursorPos = s.cursorPos;
 		this.lift = null;
+		this.pendingScale = false;
 		this.won = false;
 		this.newRecord = false;
-		this.kString = "1";
+		this.resetK();
 		this.hintText = null;
 		return true;
 	}
@@ -225,10 +259,15 @@ export class Game {
 		this.history = [];
 		this.moves = 0;
 		this.lift = null;
+		this.pendingScale = false;
 		this.won = false;
 		this.newRecord = false;
-		this.kString = "1";
+		this.resetK();
 		this.hintText = null;
+	}
+
+	private syncLiftFactor(): void {
+		if (this.lift) this.lift.factor = this.k;
 	}
 
 	private pushHistory(): void {
@@ -242,7 +281,7 @@ export class Game {
 
 	private finishMove(): void {
 		this.moves++;
-		this.kString = "1";
+		this.resetK();
 		this.hintText = null;
 		if (this.isRREF()) {
 			this.won = true;

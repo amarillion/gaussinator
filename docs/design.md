@@ -38,11 +38,13 @@ Legal moves (all are elementary row operations):
 | Move | Math | In-game action |
 | --- | --- | --- |
 | Swap rows | `R_i ↔ R_j` | Move a row up/down; swiping a row on touch |
-| Scale row | `R_i ← k·R_i`, `k ≠ 0` | Set multiplier `k`, press `M` / `×k` |
-| Combine | `R_j ← R_j + k·R_i`, `i ≠ j`, `k ≠ 0` | Lift row `i` with `→`, multiply the lifted copy by `k` with `M`, align it with row `j` (`↑`/`↓`), press `Enter` |
+| Scale row | `R_i ← k·R_i`, `k ≠ 0` | Pick `k` on the left multiplier rail, press `M`, then `Enter` (`Esc` cancels) |
+| Combine | `R_j ← R_j + k·R_i`, `i ≠ j`, `k ≠ 0` | Lift row `i` with `→`, pick `k` on the rail (the lifted copy updates live, always relative to the original row), align with row `j` (`↑`/`↓`), press `Enter` |
 
-`k` may be any non-zero rational such as `2`, `-3`, or `3/4`. Subtracting one
-row from another is the combine operation with negative `k`.
+The multiplier rail has `1` at the center, integers `2…9` above it, and unit
+fractions `1/2…1/9` below it. `PgUp`/`PgDn` move the selection; `-` toggles a
+negative factor. Subtracting one row from another is the combine operation with
+negative `k`.
 
 A level is **won** when the matrix is in RREF:
 
@@ -151,13 +153,14 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 | --- | --- |
 | `↑` `↓` (or `K` `J`) | Move the row cursor |
 | `Shift+↑` / `Shift+↓` | Swap cursor row with neighbor |
-| `0-9`, `-`, `/`, `Backspace` | Edit the pending multiplier `k` |
-| `M` or `*` | Multiply cursor row by `k` (while lifted: multiply the lifted copy) |
+| `PgUp` / `PgDn` | Move the multiplier-rail selection |
+| `-` | Toggle a negative factor |
+| `M` or `*` | Start in-place scaling of the cursor row; `Enter` applies, `Esc` cancels |
 | `→` | Lift a copy of the cursor row to the right side of the board |
 | `↑` `↓` while lifted | Align the lifted copy with a target row |
 | `Enter` / `Space` while lifted | Add the lifted copy to the target row |
 | `Esc` / `←` while lifted | Cancel the lift and return the copy |
-| `Esc` / `C` | Cancel lift / reset `k` to 1 |
+| `Esc` / `C` | Cancel lift / scale mode / reset `k` to 1 |
 | `U` | Undo |
 | `H` | Hint |
 | `R` | Restart level |
@@ -168,9 +171,9 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 
 - Tap a row to select it.
 - Swipe a row up/down to swap it with its neighbor (the 2048 gesture).
+- Tap a tile on the left multiplier rail (or the `±` button) to pick a factor;
+  the toolbar `×k` button starts/applies in-place scaling.
 - While a row is lifted, tap the target row to apply the lifted copy.
-- Bottom toolbar mirrors every keyboard operation; the k-bar has quick
-  multipliers (`½ ⅓ 2 3 −1`) plus backspace/clear.
 
 ### 7.3 State model behind the cursor
 
@@ -179,9 +182,13 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 - `rows`: matrix indexed by a **stable row id**,
 - `order`: display position → row id,
 - `cursorPos`: selected display position,
-- `kString`: pending multiplier as editable text,
+- `kIndex`: selected tile of the multiplier rail (`0` = 9, `8` = 1, `16` = 1/9),
+- `kNegative`: whether the minus key toggled the factor negative,
+- `pendingScale`: in-place scaling mode started with `M`,
 - `lift`: `{ sourceId, sourcePos, targetPos, factor } | null` — a row copy
-  currently lifted to the right side of the board.
+  currently lifted to the right side of the board. Its `factor` is always kept
+  in sync with the rail, so the lifted copy is always the original row × the
+  selected factor.
 
 Stable row ids + `order` are what make row-swap animations possible: a tile is
 keyed by row id, so swapping two entries in `order` moves both rows' tiles
@@ -202,7 +209,7 @@ src/
     matrix.ts         Matrix ops, isREF/isRREF, computeRREF
     generator.ts      level spec, PRNG, RREF generation + scramble
   game/
-    state.ts          Game class: moves, undo, k-editing, win detection
+    state.ts          Game class: moves, undo, k rail, win detection
     hint.ts           next-step hint engine
   ui/
     render.ts         board tiles, animations, stats, overlays
@@ -260,8 +267,9 @@ Vitest covers (see `*.test.ts`):
   RREF, start is not, `computeRREF(start) == answer`, par > 0, entries bounded.
 - `Hint`: exact suggestions and an **auto-solver** that follows hints to
   completion for every generated level tested.
-- `Game`: k-string editing, scale/lift/swap, invalid-op rejection, undo
-  (including cursor restore), win detection and best-score callback.
+- `Game`: multiplier-rail selection, sign toggling, scale mode (start/apply/
+  cancel), lift/swap, invalid-op rejection, undo (including cursor restore),
+  win detection and best-score callback.
 
 No DOM/browser tests are in the suite; the UI is verified by `tsc`, the
 production build, and manual play.

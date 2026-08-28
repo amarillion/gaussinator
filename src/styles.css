@@ -81,7 +81,9 @@ header {
 
 #board-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 
-#board-row { position: relative; }
+#board-row { position: relative; display: flex; align-items: center; gap: 10px; }
+
+#board-stack { position: relative; }
 
 #board {
   position: relative;
@@ -183,6 +185,12 @@ header {
 .cell.src { box-shadow: 0 0 0 3px var(--info); }
 .cell.target { box-shadow: 0 0 0 3px var(--ok); }
 .cell.hint { box-shadow: 0 0 0 3px #f1c40f; }
+.cell.scale { animation: scale-pulse 0.9s ease infinite; }
+
+@keyframes scale-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--accent); }
+  50% { box-shadow: 0 0 0 7px var(--accent); }
+}
 
 .badge { min-height: 20px; font-size: 14px; text-align: center; }
 .badge.ref { color: #6fbf73; }
@@ -200,20 +208,18 @@ header {
 
 .hidden { display: none !important; }
 
-#kbar {
+/* Left multiplier rail: a column of factor tiles with 1 in the center. */
+#factor-rail {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 4px;
+  flex: 0 0 auto;
 }
 
-.k-label { font-size: 18px; font-weight: 700; min-width: 60px; }
-
-.k-controls { display: flex; gap: 6px; flex-wrap: wrap; }
-
-.qbtn {
-  min-width: 44px;
-  height: 44px;
+.k-sign {
+  width: 44px;
+  height: 30px;
   border: none;
   border-radius: 8px;
   background: #cdc1b4;
@@ -223,7 +229,49 @@ header {
   cursor: pointer;
 }
 
-.qbtn:active { transform: scale(0.94); }
+.k-tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.k-tile {
+  width: 44px;
+  height: var(--rail-tile-h, 20px);
+  border: none;
+  border-radius: 5px;
+  background: #cdc1b4;
+  color: var(--text);
+  font-size: var(--rail-font, 12px);
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.k-tile.sel {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65);
+}
+
+.k-tile.sel.neg {
+  background: #3c3a32;
+}
+
+.k-sign:active, .k-tile:active { transform: scale(0.94); }
+
+.mode-label {
+  min-height: 18px;
+  font-size: 13px;
+  text-align: center;
+  color: #a89f92;
+}
+
+.mode-label.scale { color: var(--accent); font-weight: 700; }
+.mode-label.lift { color: var(--info); font-weight: 700; }
 
 #toolbar {
   display: grid;

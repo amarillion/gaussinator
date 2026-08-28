@@ -10,7 +10,8 @@ decimals).
 ## Features
 
 - Exact `BigInt` rational math — fractions like `-3/4` are shown and combined exactly
-- Three legal row operations: **swap** rows, **scale** a row by any non-zero k, **add k×row** to another row (subtract = negative k)
+- Three legal row operations: **swap** rows, **scale** a row by a non-zero k, **add k×row** to another row (subtract = negative k)
+- A left-side **multiplier rail** picks k: 1 in the center, integers 2…9 above, unit fractions 1/2…1/9 below; `PgUp`/`PgDn` move, `-` toggles negative
 - Levels grow from **2×3** to **4×6**, then endless 4×6 boards with deeper scrambles
 - Every level is generated backward from a random RREF, so it is **always solvable**
 - Win detection via exact RREF check, plus an "Echelon form ✓" progress badge
@@ -53,13 +54,14 @@ at the bottom.
 | --- | --- |
 | `↑` `↓` (or `K` `J`) | Select row |
 | `Shift+↑` / `Shift+↓` | Move (swap) the selected row |
-| `0-9`, `-`, `/`, `Backspace` | Edit the multiplier `k` (e.g. `-3/4`) |
-| `M` | Multiply selected row by `k` (while a row is lifted: multiply the lifted copy) |
-| `→` | Lift a copy of the selected row to the right side |
+| `PgUp` / `PgDn` | Move the multiplier-rail selection |
+| `-` | Toggle a negative factor |
+| `M` | Start in-place scaling of the selected row; `Enter` applies, `Esc` cancels |
+| `→` | Lift a copy of the selected row to the right side (the copy always shows the original row × the selected factor) |
 | `↑` `↓` while lifted | Align the lifted copy with a target row |
 | `Enter` / `Space` while lifted | Add the lifted copy to the aligned target row |
 | `Esc` / `←` while lifted | Cancel the lift and return the copy |
-| `Esc` / `C` | Cancel lift / reset `k` to 1 |
+| `Esc` / `C` | Cancel lift / scale mode / reset `k` to 1 |
 | `U` / `H` / `R` | Undo / Hint / Restart |
 | `?` | Reopen tutorial |
 | `Enter` / `Space` | Next level after a win |
@@ -68,7 +70,7 @@ at the bottom.
 
 - **Tap** a row to select it
 - **Swipe** a row up/down to swap it with its neighbor
-- Use the `k` quick buttons (`½ ⅓ 2 3 −1`) and the toolbar (`×k`, `→ Lift`, swap, undo, hint, restart)
+- Tap a tile on the left multiplier rail (or the `±` button) to pick a factor; the toolbar `×k` button starts/applies in-place scaling
 - While a row is lifted, tap the target row to apply the lifted copy
 
 ## Project structure
@@ -83,7 +85,7 @@ src/
     matrix.ts         matrix operations, isREF/isRREF, RREF solver
     generator.ts      level sizing, PRNG, solvable level generation
   game/
-    state.ts          game state: moves, undo, k editing, win detection
+    state.ts          game state: moves, undo, k rail, win detection
     hint.ts           exact next-step hint engine
   ui/
     render.ts         board rendering and animations

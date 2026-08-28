@@ -52,13 +52,14 @@ export function getHint(matrix: Matrix): Hint {
 		}
 
 		if (!v.isOne()) {
+			const f = v.inv();
 			return {
 				done: false,
 				kind: "scale",
 				rows: [ p ],
 				col: c,
-				factor: v.inv(),
-				text: `Multiply row ${p + 1} by ${v.inv().toString()} to make the pivot in column ${c + 1} equal to 1.`,
+				factor: f,
+				text: `Scale row ${p + 1} by ${f.toString()}: press M, choose the factor on the left rail (PgUp/PgDn, − for negative), then Enter to make the pivot in column ${c + 1} equal to 1.`,
 			};
 		}
 
@@ -66,26 +67,28 @@ export function getHint(matrix: Matrix): Hint {
 		for (let r = p + 1; r < n; r++) {
 			const x = matrix[r][c];
 			if (!x.isZero()) {
+				const f = x.neg();
 				return {
 					done: false,
 					kind: "add",
 					rows: [ p, r ],
 					col: c,
-					factor: x.neg(),
-					text: `Lift row ${p + 1} with →, set k = ${x.neg().toString()}, press M, align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
+					factor: f,
+					text: `Lift row ${p + 1} with →, choose the factor ${f.toString()} on the left rail (PgUp/PgDn, − for negative), align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
 				};
 			}
 		}
 		for (let r = 0; r < p; r++) {
 			const x = matrix[r][c];
 			if (!x.isZero()) {
+				const f = x.neg();
 				return {
 					done: false,
 					kind: "add",
 					rows: [ p, r ],
 					col: c,
-					factor: x.neg(),
-					text: `Lift row ${p + 1} with →, set k = ${x.neg().toString()}, press M, align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
+					factor: f,
+					text: `Lift row ${p + 1} with →, choose the factor ${f.toString()} on the left rail (PgUp/PgDn, − for negative), align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
 				};
 			}
 		}

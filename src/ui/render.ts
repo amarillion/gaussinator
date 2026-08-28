@@ -1,4 +1,4 @@
-import { Game } from "../game/state";
+import { Game, K_TILES } from "../game/state";
 import { Rational } from "../math/rational";
 
 function tierOf(r: Rational): number {
@@ -24,9 +24,15 @@ function setText(id: string, text: string): void {
 	if (el) el.textContent = text;
 }
 
+function kLabel(game: Game): string {
+	return game.k.toString().replace("-", "−");
+}
+
 export class Renderer {
 	private board: HTMLElement;
 	private rail: HTMLElement | null;
+	private factorTiles: HTMLElement[] = [];
+	private lastRailIndex = -1;
 	private tiles = new Map<string, HTMLElement>();
 	private cells = new Map<string, HTMLElement>();
 	private liftTiles = new Map<number, HTMLElement>();
@@ -40,6 +46,23 @@ export class Renderer {
 	constructor(board: HTMLElement) {
 		this.board = board;
 		this.rail = document.getElementById("lift-rail");
+		this.buildFactorRail();
+	}
+
+	private buildFactorRail(): void {
+		const rail = document.getElementById("k-tiles");
+		if (!rail) return;
+		rail.innerHTML = "";
+		this.factorTiles = [];
+		for (let i = 0; i < K_TILES.length; i++) {
+			const tile = document.createElement("button");
+			tile.type = "button";
+			tile.className = "k-tile";
+			tile.dataset.kIndex = String(i);
+			tile.textContent = K_TILES[i].toString();
+			rail.appendChild(tile);
+			this.factorTiles.push(tile);
+		}
 	}
 
 	layout(n: number, m: number): void {
@@ -56,6 +79,13 @@ export class Renderer {
 		if (this.rail) {
 			this.rail.style.height = this.board.style.height;
 			this.rail.style.setProperty("--tile-font", this.board.style.getPropertyValue("--tile-font"));
+		}
+		const rail = document.getElementById("factor-rail");
+		if (rail) {
+			const boardH = n * this.tileH + (n + 1) * this.gap;
+			const railTileH = Math.max(14, Math.min(28, Math.floor((boardH - 16 * 2) / K_TILES.length)));
+			rail.style.setProperty("--rail-tile-h", `${railTileH}px`);
+			rail.style.setProperty("--rail-font", `${Math.max(9, Math.floor(railTileH * 0.72))}px`);
 		}
 	}
 
@@ -120,12 +150,13 @@ export class Renderer {
 			const cell = this.cells.get(key)!;
 			this.paintValue(cell, game.rows[r][c], key, this.last);
 
-			cell.classList.remove("cursor", "src", "target");
+			cell.classList.remove("cursor", "src", "target", "scale");
 			if (lift) {
 				cell.classList.toggle("src", pos === lift.sourcePos);
 				cell.classList.toggle("target", pos === lift.targetPos);
 			} else {
 				cell.classList.toggle("cursor", pos === game.cursorPos);
+				cell.classList.toggle("scale", game.pendingScale && pos === game.cursorPos);
 			}
 			cell.classList.toggle("hint", hintRows !== null && hintRows.includes(pos));
 		}
@@ -143,9 +174,41 @@ export class Renderer {
 			}
 		}
 
+		this.updateFactorRail(game);
+		this.updateModeLabel(game);
 		this.updateStats(game);
 		this.updateBadge(game);
-		setText("k-value", game.kString);
+	}
+
+	private updateFactorRail(game: Game): void {
+		for (let i = 0; i < this.factorTiles.length; i++) {
+			const tile = this.factorTiles[i];
+			const sel = i === game.kIndex;
+			tile.classList.toggle("sel", sel);
+			tile.classList.toggle("neg", sel && game.kNegative);
+			if (sel || i === this.lastRailIndex) {
+				const label = (sel && game.kNegative ? "−" : "") + K_TILES[i].toString();
+				tile.textContent = label;
+			}
+		}
+		this.lastRailIndex = game.kIndex;
+		const sign = document.getElementById("k-sign");
+		if (sign) sign.textContent = game.kNegative ? "−" : "±";
+	}
+
+	private updateModeLabel(game: Game): void {
+		const el = document.getElementById("mode-label");
+		if (!el) return;
+		if (game.pendingScale) {
+			el.textContent = `Scale row ${game.cursorPos + 1} by ${kLabel(game)} — Enter to apply, Esc to cancel`;
+			el.className = "mode-label scale";
+		} else if (game.lift) {
+			el.textContent = `Lift row ${game.lift.sourcePos + 1} × ${kLabel(game)} → row ${game.lift.targetPos + 1} — Enter to add, Esc to cancel`;
+			el.className = "mode-label lift";
+		} else {
+			el.textContent = `k = ${kLabel(game)}`;
+			el.className = "mode-label";
+		}
 	}
 
 	private paintValue(cell: HTMLElement, val: Rational, key: string, last: Map<string, string>): void {

@@ -31,38 +31,40 @@ function setupKeyboard(ctx: InputContext): void {
 		}
 
 		if (key === " ") e.preventDefault();
+		if (key === "Backspace" || key === "/") e.preventDefault();
 
-		// Multiplier editing (works both normally and while a row is lifted)
-		if (/^[0-9]$/.test(key)) {
-			game.appendK(key);
+		// Multiplier rail selection
+		if (key === "PageUp") {
+			game.moveK(-1);
+			sfx.select();
 			e.preventDefault();
 			ctx.afterAction();
 			return;
 		}
-		if (key === "/") {
-			game.appendK("/");
+		if (key === "PageDown") {
+			game.moveK(1);
+			sfx.select();
 			e.preventDefault();
 			ctx.afterAction();
 			return;
 		}
 		if (key === "-") {
-			game.appendK("-");
+			game.toggleKSign();
+			sfx.select();
 			e.preventDefault();
 			ctx.afterAction();
 			return;
 		}
-		if (key === "Backspace") {
-			game.backspaceK();
-			e.preventDefault();
-			ctx.afterAction();
-			return;
-		}
+
 		if (key === "Escape") {
-			if (game.lift) {
+			if (game.pendingScale) {
+				game.cancelScaleMode();
+				sfx.select();
+			} else if (game.lift) {
 				game.cancelLift();
 				sfx.select();
 			} else {
-				game.setK("1");
+				game.resetK();
 			}
 			e.preventDefault();
 			ctx.afterAction();
@@ -70,7 +72,8 @@ function setupKeyboard(ctx: InputContext): void {
 		}
 		if (key === "c" || key === "C") {
 			game.cancelLift();
-			game.setK("1");
+			game.cancelScaleMode();
+			game.resetK();
 			e.preventDefault();
 			ctx.afterAction();
 			return;
@@ -83,8 +86,13 @@ function setupKeyboard(ctx: InputContext): void {
 				game.moveLift(-1);
 				sfx.select();
 			} else if (e.shiftKey) {
-				if (game.swapCursor(-1)) sfx.move();
-				else sfx.invalid();
+				if (game.pendingScale) {
+					sfx.invalid();
+				} else if (game.swapCursor(-1)) {
+					sfx.move();
+				} else {
+					sfx.invalid();
+				}
 			} else {
 				game.moveCursor(-1);
 				sfx.select();
@@ -98,8 +106,13 @@ function setupKeyboard(ctx: InputContext): void {
 				game.moveLift(1);
 				sfx.select();
 			} else if (e.shiftKey) {
-				if (game.swapCursor(1)) sfx.move();
-				else sfx.invalid();
+				if (game.pendingScale) {
+					sfx.invalid();
+				} else if (game.swapCursor(1)) {
+					sfx.move();
+				} else {
+					sfx.invalid();
+				}
 			} else {
 				game.moveCursor(1);
 				sfx.select();
@@ -127,24 +140,32 @@ function setupKeyboard(ctx: InputContext): void {
 			return;
 		}
 
-		// Row operations
+		// In-place scaling mode: M starts it, Enter applies, Esc cancels.
 		if (key === "m" || key === "M" || key === "*") {
 			if (game.lift) {
-				if (game.multiplyLift()) sfx.scale();
-				else sfx.invalid();
+				sfx.invalid();
+			} else if (game.startScaleMode()) {
+				sfx.select();
 			} else {
-				if (game.applyScale()) sfx.scale();
-				else sfx.invalid();
+				sfx.invalid();
 			}
 			ctx.afterAction();
 			return;
 		}
-		if ((key === "Enter" || key === " ") && game.lift) {
-			e.preventDefault();
-			if (game.applyLift()) sfx.combine();
-			else sfx.invalid();
-			ctx.afterAction();
-			return;
+		if (key === "Enter" || key === " ") {
+			if (game.pendingScale) {
+				if (game.applyScale()) sfx.scale();
+				else sfx.invalid();
+				ctx.afterAction();
+				return;
+			}
+			if (game.lift) {
+				e.preventDefault();
+				if (game.applyLift()) sfx.combine();
+				else sfx.invalid();
+				ctx.afterAction();
+				return;
+			}
 		}
 
 		// Utility
@@ -176,12 +197,15 @@ function on(id: string, fn: () => void): void {
 function setupButtons(ctx: InputContext): void {
 	on("btn-scale", () => {
 		const g = ctx.getGame();
-		if (g.lift) {
-			if (g.multiplyLift()) sfx.scale();
-			else sfx.invalid();
-		} else {
+		if (g.pendingScale) {
 			if (g.applyScale()) sfx.scale();
 			else sfx.invalid();
+		} else if (g.lift) {
+			sfx.invalid();
+		} else if (g.startScaleMode()) {
+			sfx.select();
+		} else {
+			sfx.invalid();
 		}
 		ctx.afterAction();
 	});
@@ -196,6 +220,8 @@ function setupButtons(ctx: InputContext): void {
 		if (g.lift) {
 			g.moveLift(-1);
 			sfx.select();
+		} else if (g.pendingScale) {
+			sfx.invalid();
 		} else {
 			if (g.swapCursor(-1)) sfx.move();
 			else sfx.invalid();
@@ -207,6 +233,8 @@ function setupButtons(ctx: InputContext): void {
 		if (g.lift) {
 			g.moveLift(1);
 			sfx.select();
+		} else if (g.pendingScale) {
+			sfx.invalid();
 		} else {
 			if (g.swapCursor(1)) sfx.move();
 			else sfx.invalid();
@@ -224,23 +252,22 @@ function setupButtons(ctx: InputContext): void {
 	on("btn-next", () => ctx.nextLevel());
 	on("btn-tutorial", () => ctx.showTutorial());
 	on("btn-sound", () => ctx.toggleSound());
-	on("k-back", () => {
-		ctx.getGame().backspaceK();
-		ctx.afterAction();
-	});
-	on("k-clear", () => {
-		ctx.getGame().setK("1");
+	on("k-sign", () => {
+		ctx.getGame().toggleKSign();
+		sfx.select();
 		ctx.afterAction();
 	});
 
-	document.querySelectorAll<HTMLElement>("[data-k]").forEach(btn => {
-		btn.addEventListener("click", () => {
-			const g = ctx.getGame();
-			g.setK(btn.dataset.k ?? "1");
+	const rail = document.getElementById("k-tiles");
+	if (rail) {
+		rail.addEventListener("click", e => {
+			const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-k-index]");
+			if (!btn) return;
+			ctx.getGame().setKIndex(Number(btn.dataset.kIndex));
 			sfx.select();
 			ctx.afterAction();
 		});
-	});
+	}
 }
 
 function setupBoardTouch(ctx: InputContext): void {
@@ -272,10 +299,12 @@ function setupBoardTouch(ctx: InputContext): void {
 				if (g.lift) {
 					g.moveLift(dy < 0 ? -1 : 1);
 					sfx.select();
-				} else {
+				} else if (!g.pendingScale) {
 					g.cursorPos = down.pos;
 					if (g.swapCursor(dy < 0 ? -1 : 1)) sfx.move();
 					else sfx.invalid();
+				} else {
+					sfx.invalid();
 				}
 				ctx.afterAction();
 			}

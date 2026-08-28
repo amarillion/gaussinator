@@ -28,28 +28,22 @@
 
     <div id="board-wrap">
       <div id="board-row">
-        <div id="board"></div>
-        <div id="lift-rail" aria-hidden="true"></div>
+        <div id="factor-rail" class="factor-rail" aria-label="Multiplier">
+          <button id="k-sign" class="k-sign" type="button" title="Toggle negative factor (minus key)">±</button>
+          <div id="k-tiles" class="k-tiles"></div>
+        </div>
+        <div id="board-stack">
+          <div id="board"></div>
+          <div id="lift-rail" aria-hidden="true"></div>
+        </div>
       </div>
+      <div id="mode-label" class="mode-label"></div>
       <div id="badge" class="badge"></div>
       <div id="hint-box" class="hint-box hidden"></div>
     </div>
 
-    <div id="kbar">
-      <div class="k-label">k = <span id="k-value">1</span></div>
-      <div class="k-controls">
-        <button class="qbtn" data-k="1/2">½</button>
-        <button class="qbtn" data-k="1/3">⅓</button>
-        <button class="qbtn" data-k="2">2</button>
-        <button class="qbtn" data-k="3">3</button>
-        <button class="qbtn" data-k="-1">−1</button>
-        <button class="qbtn" id="k-back" title="Backspace">⌫</button>
-        <button class="qbtn" id="k-clear" title="Reset to 1">C</button>
-      </div>
-    </div>
-
     <div id="toolbar">
-      <button id="btn-scale" class="op">×k<small>Scale row</small></button>
+      <button id="btn-scale" class="op">×k<small>Scale mode</small></button>
       <button id="btn-lift" class="op">→<small>Lift row</small></button>
       <button id="btn-swap-up" class="nav">▲<small>Swap up</small></button>
       <button id="btn-swap-down" class="nav">▼<small>Swap down</small></button>
@@ -59,7 +53,7 @@
     </div>
 
     <footer id="help-line">
-      Tap a row to select · swipe ↑/↓ to swap · keys: ↑↓ select · → lift row · ↑↓ align · Enter apply · Esc cancel · M multiply · U undo · H hint
+      Tap a row to select · swipe ↑/↓ to swap · keys: ↑↓ select · PgUp/PgDn factor · − negate · M scale · → lift row · Enter apply · Esc cancel · U undo · H hint
     </footer>
   </div>
 
@@ -87,19 +81,20 @@
         <p><b>Legal moves</b> (elementary row operations):</p>
         <ul>
           <li><b>Swap</b> two rows,</li>
-          <li><b>Multiply</b> a row by any non-zero number k,</li>
-          <li><b>Add</b> one row to another: lift a row with <kbd>→</kbd>, optionally multiply the lifted copy with <kbd>M</kbd>, align it with the target row (<kbd>↑</kbd>/<kbd>↓</kbd>), then press <kbd>Enter</kbd> (use k = −1 to subtract).</li>
+          <li><b>Multiply</b> a row by a non-zero number k: pick k on the left rail (<kbd>PgUp</kbd>/<kbd>PgDn</kbd>, <kbd>−</kbd> for negative), press <kbd>M</kbd>, then <kbd>Enter</kbd> to apply (<kbd>Esc</kbd> cancels),</li>
+          <li><b>Add</b> one row to another: lift a row with <kbd>→</kbd>, pick the multiplier on the rail (the lifted copy updates live, always from the original row), align it with the target row (<kbd>↑</kbd>/<kbd>↓</kbd>), then press <kbd>Enter</kbd>.</li>
         </ul>
         <p><b>Keyboard:</b></p>
         <ul class="keys">
           <li><kbd>↑</kbd> <kbd>↓</kbd> or <kbd>K</kbd> <kbd>J</kbd> — select row</li>
           <li><kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> — move the selected row</li>
-          <li>type e.g. <kbd>-</kbd><kbd>3</kbd><kbd>/</kbd><kbd>4</kbd> — set k</li>
-          <li><kbd>M</kbd> — multiply selected row by k (while lifted: multiply the lifted copy)</li>
-          <li><kbd>→</kbd> — lift the selected row to the right; then <kbd>↑</kbd>/<kbd>↓</kbd> align it with a target row and <kbd>Enter</kbd> adds it (<kbd>Esc</kbd> or <kbd>←</kbd> cancels)</li>
+          <li><kbd>PgUp</kbd> <kbd>PgDn</kbd> — choose the multiplier on the left rail</li>
+          <li><kbd>−</kbd> — toggle a negative factor</li>
+          <li><kbd>M</kbd> — start in-place scaling of the selected row; <kbd>Enter</kbd> applies, <kbd>Esc</kbd> cancels</li>
+          <li><kbd>→</kbd> — lift the selected row to the right; the lifted copy is always the original row × the selected factor; <kbd>↑</kbd>/<kbd>↓</kbd> align it with a target row and <kbd>Enter</kbd> adds it (<kbd>Esc</kbd> or <kbd>←</kbd> cancels)</li>
           <li><kbd>U</kbd> undo · <kbd>H</kbd> hint · <kbd>R</kbd> restart · <kbd>Esc</kbd> cancel / reset k</li>
         </ul>
-        <p><b>Touch:</b> tap a row to select it, swipe a row up/down to swap it, then use the buttons below the board. While a row is lifted, tap the target row to apply the lifted copy.</p>
+        <p><b>Touch:</b> tap a row to select it, swipe a row up/down to swap it, and tap a tile on the left rail (or the ± button) to pick a multiplier. The toolbar ×k button starts/applies in-place scaling. While a row is lifted, tap the target row to apply the lifted copy.</p>
       </div>
       <button id="btn-tutorial-close" class="big-btn">Start playing</button>
     </div>
