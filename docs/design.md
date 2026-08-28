@@ -213,22 +213,27 @@ src/
     state.ts          Game class: moves, undo, k rail, win detection
     hint.ts           next-step hint engine
   ui/
-    render.ts         HUD, stats, badge, overlays
     input.ts          keyboard, buttons
-    tutorial.ts       first-run tutorial overlay
     components/
       factor-dial.ts  <factor-dial> multiplier dial custom element
       rref-board.ts   <rref-board> matrix board + lift rail custom element
+      game-hud.ts     <game-hud> mode label, badge, hint box
+      game-stats.ts   <game-stats> header stat tiles
+      win-overlay.ts  <win-overlay> level-complete modal
+      tutorial-overlay.ts <tutorial-overlay> how-to-play modal
 index.html            static UI shell (all element ids live here)
 ```
 
 ### 8.1 Data flow
 
 1. `main.ts` creates a `Game(levelIndex, seed)`.
-2. Input handlers (`input.ts`) call `Game` methods and then `afterAction()`.
-3. `afterAction()` re-renders, clears stale hints when moves changed, and
-   shows the win overlay if `game.won`.
-4. `render.ts` positions each tile from `order`, renders rational values,
+2. Input handlers (`input.ts`) and custom-element events call `Game` methods
+   and then `afterAction()`.
+3. `afterAction()` pushes a fresh view model into the custom elements:
+   `<rref-board>` (tiles, lift rail), `<factor-dial>`, `<game-hud>`,
+   `<game-stats>`, and the overlays; it also clears stale hints when moves
+   changed and shows the win overlay when `game.won`.
+4. `<rref-board>` positions each tile from `order`, renders rational values,
    and applies CSS classes for cursor/source/target/hint/pop.
 
 ### 8.2 Rendering and animation

@@ -1,15 +1,21 @@
 import "./styles.css";
 import { Game, computeStars } from "./game/state";
 import { getHint } from "./game/hint";
-import { Renderer } from "./ui/render";
 import { setupInput } from "./ui/input";
 import { FactorDial } from "./ui/components/factor-dial";
 import { RrefBoard } from "./ui/components/rref-board";
-import { initTutorial, showTutorial, hideTutorial } from "./ui/tutorial";
+import { GameHud } from "./ui/components/game-hud";
+import { GameStats } from "./ui/components/game-stats";
+import { WinOverlay } from "./ui/components/win-overlay";
+import { TutorialOverlay } from "./ui/components/tutorial-overlay";
 import { setSound, sfx } from "./audio";
 
 customElements.define("factor-dial", FactorDial);
 customElements.define("rref-board", RrefBoard);
+customElements.define("game-hud", GameHud);
+customElements.define("game-stats", GameStats);
+customElements.define("win-overlay", WinOverlay);
+customElements.define("tutorial-overlay", TutorialOverlay);
 
 const seedBase = (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 
@@ -17,9 +23,13 @@ let game: Game;
 let hintRows: number[] | null = null;
 let lastMoves = 0;
 
-const renderer = new Renderer();
 const board = document.getElementById("board") as RrefBoard;
 const factorDial = document.getElementById("factor-dial") as FactorDial | null;
+const hud = document.getElementById("hud") as GameHud;
+const stats = document.getElementById("stats") as GameStats;
+const winOverlay = document.getElementById("win-overlay") as WinOverlay;
+const tutorialOverlay = document.getElementById("tutorial-overlay") as TutorialOverlay;
+const sizeLabel = document.getElementById("size-label")!;
 
 const bestKey = (n: number, m: number) => `rref.best.${n}x${m}`;
 
@@ -67,12 +77,14 @@ function afterAction(): void {
 	board.toggleAttribute("disabled", game.won);
 	factorDial?.setSelection(game.kIndex, game.kNegative);
 	factorDial?.toggleAttribute("disabled", game.won);
-	renderer.renderHud(game);
-	renderer.setHint(game.hintText);
+	stats.update(game);
+	hud.update(game);
+	hud.setHint(game.hintText);
+	sizeLabel.textContent = `${game.n}×${game.m}`;
 	if (game.won) {
-		renderer.showWin(computeStars(game.moves, game.par), game.moves, game.par, game.best, game.newRecord);
+		winOverlay.show(computeStars(game.moves, game.par), game.moves, game.par, game.best, game.newRecord);
 	} else {
-		renderer.hideWin();
+		winOverlay.hide();
 	}
 }
 
@@ -104,12 +116,24 @@ function toggleSound(): void {
 	}
 }
 
-initTutorial();
+function showTutorial(): void {
+	tutorialOverlay.show();
+}
+
+tutorialOverlay.addEventListener("close", () => {
+	tutorialOverlay.hide();
+	try {
+		localStorage.setItem("rref.tutorialSeen", "1");
+	} catch {
+		// localStorage may be unavailable; the tutorial still closes.
+	}
+});
+
 try {
 	if (localStorage.getItem("rref.tutorialSeen") !== "1") showTutorial();
-	else hideTutorial();
+	else tutorialOverlay.hide();
 } catch {
-	hideTutorial();
+	tutorialOverlay.hide();
 }
 
 setupInput({
@@ -171,6 +195,8 @@ board.addEventListener("row-swipe", e => {
 	}
 	afterAction();
 });
+
+winOverlay.addEventListener("next", () => startLevel(game.levelIndex + 1));
 
 window.addEventListener("resize", () => {
 	board.layout(game.n, game.m);

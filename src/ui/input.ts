@@ -248,7 +248,6 @@ function setupButtons(ctx: InputContext): void {
 	});
 	on("btn-hint", () => ctx.showHint());
 	on("btn-restart", () => ctx.restartLevel());
-	on("btn-next", () => ctx.nextLevel());
 	on("btn-tutorial", () => ctx.showTutorial());
 	on("btn-sound", () => ctx.toggleSound());
 }
