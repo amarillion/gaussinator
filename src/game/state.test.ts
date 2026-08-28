@@ -56,15 +56,72 @@ describe("Game", () => {
 		expect(g.moves).toBe(0);
 	});
 
-	it("combines rows with add/subtract", () => {
+	it("lifts a row, multiplies the copy, and applies it to a target", () => {
 		const g = new Game(0, 1);
 		g.rows = M([ [ 1, 0 ], [ 2, 1 ] ]);
 		g.order = [ 0, 1 ];
 		g.cursorPos = 0;
+		expect(g.liftRow()).toBe(true);
+		expect(g.lift?.sourceId).toBe(0);
+		expect(g.lift?.sourcePos).toBe(0);
 		g.setK("-2");
-		g.enterCombine("add");
-		expect(g.confirmCombine(1)).toBe(true);
+		expect(g.multiplyLift()).toBe(true);
+		expect(g.lift?.factor.toString()).toBe("-2");
+		g.setLiftTarget(1);
+		expect(g.applyLift()).toBe(true);
 		expect(g.rows[1].map(x => x.toString())).toEqual([ "0", "1" ]);
+		expect(g.moves).toBe(1);
+		expect(g.lift).toBeNull();
+		expect(g.cursorPos).toBe(1);
+	});
+
+	it("multiplying the lifted copy accumulates k without changing kString", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
+		g.order = [ 0, 1 ];
+		g.cursorPos = 0;
+		g.liftRow();
+		g.setK("2");
+		expect(g.multiplyLift()).toBe(true);
+		expect(g.kString).toBe("2");
+		expect(g.multiplyLift()).toBe(true);
+		expect(g.lift?.factor.toString()).toBe("4");
+		g.setK("0");
+		expect(g.multiplyLift()).toBe(false);
+	});
+
+	it("rejects applying a lift to its own source row", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 1, 0 ], [ 2, 1 ] ]);
+		g.order = [ 0, 1 ];
+		g.cursorPos = 0;
+		g.liftRow();
+		expect(g.applyLift()).toBe(false);
+		expect(g.moves).toBe(0);
+		expect(g.lift).not.toBeNull();
+	});
+
+	it("cancels an active lift", () => {
+		const g = new Game(0, 1);
+		g.liftRow();
+		expect(g.lift).not.toBeNull();
+		g.cancelLift();
+		expect(g.lift).toBeNull();
+	});
+
+	it("undo clears an active lift and restores the previous rows", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
+		g.order = [ 0, 1 ];
+		g.setK("3");
+		g.applyScale();
+		g.cursorPos = 0;
+		g.liftRow();
+		expect(g.lift).not.toBeNull();
+		expect(g.undo()).toBe(true);
+		expect(g.lift).toBeNull();
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
+		expect(g.moves).toBe(0);
 	});
 
 	it("reorders rows and moves the cursor", () => {

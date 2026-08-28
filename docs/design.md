@@ -39,7 +39,7 @@ Legal moves (all are elementary row operations):
 | --- | --- | --- |
 | Swap rows | `R_i ↔ R_j` | Move a row up/down; swiping a row on touch |
 | Scale row | `R_i ← k·R_i`, `k ≠ 0` | Set multiplier `k`, press `M` / `×k` |
-| Combine | `R_j ← R_j + k·R_i`, `i ≠ j`, `k ≠ 0` | `A`/`S` (add/subtract) with source and target rows |
+| Combine | `R_j ← R_j + k·R_i`, `i ≠ j`, `k ≠ 0` | Lift row `i` with `→`, multiply the lifted copy by `k` with `M`, align it with row `j` (`↑`/`↓`), press `Enter` |
 
 `k` may be any non-zero rational such as `2`, `-3`, or `3/4`. Subtracting one
 row from another is the combine operation with negative `k`.
@@ -152,10 +152,12 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 | `↑` `↓` (or `K` `J`) | Move the row cursor |
 | `Shift+↑` / `Shift+↓` | Swap cursor row with neighbor |
 | `0-9`, `-`, `/`, `Backspace` | Edit the pending multiplier `k` |
-| `M` or `*` | Multiply cursor row by `k` |
-| `A` / `S` | Start combine (add / subtract `k×row`) |
-| `↑` `↓` + `Enter` in combine | Pick target row and apply |
-| `Esc` / `C` | Cancel combine / reset `k` to 1 |
+| `M` or `*` | Multiply cursor row by `k` (while lifted: multiply the lifted copy) |
+| `→` | Lift a copy of the cursor row to the right side of the board |
+| `↑` `↓` while lifted | Align the lifted copy with a target row |
+| `Enter` / `Space` while lifted | Add the lifted copy to the target row |
+| `Esc` / `←` while lifted | Cancel the lift and return the copy |
+| `Esc` / `C` | Cancel lift / reset `k` to 1 |
 | `U` | Undo |
 | `H` | Hint |
 | `R` | Restart level |
@@ -166,7 +168,7 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 
 - Tap a row to select it.
 - Swipe a row up/down to swap it with its neighbor (the 2048 gesture).
-- In combine mode, tap the target row to apply.
+- While a row is lifted, tap the target row to apply the lifted copy.
 - Bottom toolbar mirrors every keyboard operation; the k-bar has quick
   multipliers (`½ ⅓ 2 3 −1`) plus backspace/clear.
 
@@ -178,7 +180,8 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 - `order`: display position → row id,
 - `cursorPos`: selected display position,
 - `kString`: pending multiplier as editable text,
-- `combine`: `{ mode: 'add'|'sub', sourcePos } | null`.
+- `lift`: `{ sourceId, sourcePos, targetPos, factor } | null` — a row copy
+  currently lifted to the right side of the board.
 
 Stable row ids + `order` are what make row-swap animations possible: a tile is
 keyed by row id, so swapping two entries in `order` moves both rows' tiles
@@ -257,7 +260,7 @@ Vitest covers (see `*.test.ts`):
   RREF, start is not, `computeRREF(start) == answer`, par > 0, entries bounded.
 - `Hint`: exact suggestions and an **auto-solver** that follows hints to
   completion for every generated level tested.
-- `Game`: k-string editing, scale/combine/swap, invalid-op rejection, undo
+- `Game`: k-string editing, scale/lift/swap, invalid-op rejection, undo
   (including cursor restore), win detection and best-score callback.
 
 No DOM/browser tests are in the suite; the UI is verified by `tsc`, the

@@ -16,6 +16,14 @@ export interface Snapshot {
 	cursorPos: number,
 }
 
+/** A row lifted out to the right side of the board, ready to be applied. */
+export interface Lift {
+	sourceId: number,
+	sourcePos: number,
+	targetPos: number,
+	factor: Rational,
+}
+
 export function computeStars(moves: number, par: number): number {
 	if (moves <= par) return 3;
 	if (moves <= par + Math.ceil(par / 2)) return 2;
@@ -39,7 +47,7 @@ export class Game {
 	order: number[];
 	cursorPos = 0;
 	kString = "1";
-	combine: { mode: "add" | "sub", sourcePos: number } | null = null;
+	lift: Lift | null = null;
 	history: Snapshot[] = [];
 	moves = 0;
 	par: number;
@@ -120,13 +128,52 @@ export class Game {
 		this.cursorPos = clamp(this.cursorPos + delta, 0, this.n - 1);
 	}
 
-	enterCombine(mode: "add" | "sub"): void {
-		if (this.won) return;
-		this.combine = { mode, sourcePos: this.cursorPos };
+	liftRow(): boolean {
+		if (this.won || this.lift) return false;
+		this.lift = {
+			sourceId: this.order[this.cursorPos],
+			sourcePos: this.cursorPos,
+			targetPos: this.cursorPos,
+			factor: Rational.ONE,
+		};
+		return true;
 	}
 
-	cancelCombine(): void {
-		this.combine = null;
+	moveLift(delta: number): void {
+		if (!this.lift) return;
+		this.lift.targetPos = clamp(this.lift.targetPos + delta, 0, this.n - 1);
+	}
+
+	setLiftTarget(pos: number): void {
+		if (!this.lift) return;
+		this.lift.targetPos = clamp(pos, 0, this.n - 1);
+	}
+
+	/** Multiply the lifted copy by the pending multiplier k. */
+	multiplyLift(): boolean {
+		if (!this.lift || this.won) return false;
+		const k = this.parseK();
+		if (!k) return false;
+		this.lift.factor = this.lift.factor.mul(k);
+		return true;
+	}
+
+	/** Add the lifted copy to the row it is aligned with. */
+	applyLift(): boolean {
+		const l = this.lift;
+		if (!l || this.won) return false;
+		const targetId = this.order[l.targetPos];
+		if (targetId === l.sourceId || l.factor.isZero()) return false;
+		this.pushHistory();
+		addMultiple(this.rows, l.sourceId, targetId, l.factor);
+		this.cursorPos = l.targetPos;
+		this.lift = null;
+		this.finishMove();
+		return true;
+	}
+
+	cancelLift(): void {
+		this.lift = null;
 	}
 
 	applyScale(): boolean {
@@ -135,20 +182,6 @@ export class Game {
 		if (!k) return false;
 		this.pushHistory();
 		scaleRow(this.rows, this.order[this.cursorPos], k);
-		this.finishMove();
-		return true;
-	}
-
-	confirmCombine(targetPos: number): boolean {
-		const c = this.combine;
-		if (!c || this.won) return false;
-		if (c.sourcePos === targetPos) return false;
-		const k = this.parseK();
-		if (!k) return false;
-		this.pushHistory();
-		const factor = c.mode === "sub" ? k.neg() : k;
-		addMultiple(this.rows, this.order[c.sourcePos], this.order[targetPos], factor);
-		this.combine = null;
 		this.finishMove();
 		return true;
 	}
@@ -177,7 +210,7 @@ export class Game {
 		this.order = s.order;
 		this.moves = s.moves;
 		this.cursorPos = s.cursorPos;
-		this.combine = null;
+		this.lift = null;
 		this.won = false;
 		this.newRecord = false;
 		this.kString = "1";
@@ -191,7 +224,7 @@ export class Game {
 		this.cursorPos = 0;
 		this.history = [];
 		this.moves = 0;
-		this.combine = null;
+		this.lift = null;
 		this.won = false;
 		this.newRecord = false;
 		this.kString = "1";

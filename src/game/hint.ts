@@ -72,7 +72,7 @@ export function getHint(matrix: Matrix): Hint {
 					rows: [ p, r ],
 					col: c,
 					factor: x.neg(),
-					text: `Add ${x.neg().toString()} × row ${p + 1} to row ${r + 1} to clear column ${c + 1}.`,
+					text: `Lift row ${p + 1} with →, set k = ${x.neg().toString()}, press M, align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
 				};
 			}
 		}
@@ -85,7 +85,7 @@ export function getHint(matrix: Matrix): Hint {
 					rows: [ p, r ],
 					col: c,
 					factor: x.neg(),
-					text: `Add ${x.neg().toString()} × row ${p + 1} to row ${r + 1} to clear column ${c + 1}.`,
+					text: `Lift row ${p + 1} with →, set k = ${x.neg().toString()}, press M, align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
 				};
 			}
 		}

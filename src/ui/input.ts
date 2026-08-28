@@ -30,7 +30,9 @@ function setupKeyboard(ctx: InputContext): void {
 			return;
 		}
 
-		// Multiplier editing
+		if (key === " ") e.preventDefault();
+
+		// Multiplier editing (works both normally and while a row is lifted)
 		if (/^[0-9]$/.test(key)) {
 			game.appendK(key);
 			e.preventDefault();
@@ -56,8 +58,8 @@ function setupKeyboard(ctx: InputContext): void {
 			return;
 		}
 		if (key === "Escape") {
-			if (game.combine) {
-				game.cancelCombine();
+			if (game.lift) {
+				game.cancelLift();
 				sfx.select();
 			} else {
 				game.setK("1");
@@ -67,17 +69,20 @@ function setupKeyboard(ctx: InputContext): void {
 			return;
 		}
 		if (key === "c" || key === "C") {
-			game.cancelCombine();
+			game.cancelLift();
 			game.setK("1");
 			e.preventDefault();
 			ctx.afterAction();
 			return;
 		}
 
-		// Cursor movement / row swap
+		// Cursor movement / row swap / lift alignment
 		if (key === "ArrowUp" || key === "k" || key === "K") {
 			e.preventDefault();
-			if (e.shiftKey && !game.combine) {
+			if (game.lift) {
+				game.moveLift(-1);
+				sfx.select();
+			} else if (e.shiftKey) {
 				if (game.swapCursor(-1)) sfx.move();
 				else sfx.invalid();
 			} else {
@@ -89,7 +94,10 @@ function setupKeyboard(ctx: InputContext): void {
 		}
 		if (key === "ArrowDown" || key === "j" || key === "J") {
 			e.preventDefault();
-			if (e.shiftKey && !game.combine) {
+			if (game.lift) {
+				game.moveLift(1);
+				sfx.select();
+			} else if (e.shiftKey) {
 				if (game.swapCursor(1)) sfx.move();
 				else sfx.invalid();
 			} else {
@@ -100,28 +108,40 @@ function setupKeyboard(ctx: InputContext): void {
 			return;
 		}
 
-		// Row operations
-		if (key === "a" || key === "A") {
-			game.enterCombine("add");
-			sfx.select();
-			ctx.afterAction();
-			return;
-		}
-		if (key === "s" || key === "S") {
-			game.enterCombine("sub");
-			sfx.select();
-			ctx.afterAction();
-			return;
-		}
-		if (key === "m" || key === "M" || key === "*") {
-			if (game.applyScale()) sfx.scale();
+		// Lift a copy of the selected row out to the right
+		if (key === "ArrowRight") {
+			e.preventDefault();
+			if (game.liftRow()) sfx.lift();
 			else sfx.invalid();
 			ctx.afterAction();
 			return;
 		}
-		if ((key === "Enter" || key === " ") && game.combine) {
+		// Left arrow returns the lifted row (cancels the lift)
+		if (key === "ArrowLeft") {
 			e.preventDefault();
-			if (game.confirmCombine(game.cursorPos)) sfx.combine();
+			if (game.lift) {
+				game.cancelLift();
+				sfx.select();
+				ctx.afterAction();
+			}
+			return;
+		}
+
+		// Row operations
+		if (key === "m" || key === "M" || key === "*") {
+			if (game.lift) {
+				if (game.multiplyLift()) sfx.scale();
+				else sfx.invalid();
+			} else {
+				if (game.applyScale()) sfx.scale();
+				else sfx.invalid();
+			}
+			ctx.afterAction();
+			return;
+		}
+		if ((key === "Enter" || key === " ") && game.lift) {
+			e.preventDefault();
+			if (game.applyLift()) sfx.combine();
 			else sfx.invalid();
 			ctx.afterAction();
 			return;
@@ -156,32 +176,41 @@ function on(id: string, fn: () => void): void {
 function setupButtons(ctx: InputContext): void {
 	on("btn-scale", () => {
 		const g = ctx.getGame();
-		if (g.applyScale()) sfx.scale();
+		if (g.lift) {
+			if (g.multiplyLift()) sfx.scale();
+			else sfx.invalid();
+		} else {
+			if (g.applyScale()) sfx.scale();
+			else sfx.invalid();
+		}
+		ctx.afterAction();
+	});
+	on("btn-lift", () => {
+		const g = ctx.getGame();
+		if (g.liftRow()) sfx.lift();
 		else sfx.invalid();
-		ctx.afterAction();
-	});
-	on("btn-add", () => {
-		const g = ctx.getGame();
-		g.enterCombine("add");
-		sfx.select();
-		ctx.afterAction();
-	});
-	on("btn-sub", () => {
-		const g = ctx.getGame();
-		g.enterCombine("sub");
-		sfx.select();
 		ctx.afterAction();
 	});
 	on("btn-swap-up", () => {
 		const g = ctx.getGame();
-		if (g.swapCursor(-1)) sfx.move();
-		else sfx.invalid();
+		if (g.lift) {
+			g.moveLift(-1);
+			sfx.select();
+		} else {
+			if (g.swapCursor(-1)) sfx.move();
+			else sfx.invalid();
+		}
 		ctx.afterAction();
 	});
 	on("btn-swap-down", () => {
 		const g = ctx.getGame();
-		if (g.swapCursor(1)) sfx.move();
-		else sfx.invalid();
+		if (g.lift) {
+			g.moveLift(1);
+			sfx.select();
+		} else {
+			if (g.swapCursor(1)) sfx.move();
+			else sfx.invalid();
+		}
 		ctx.afterAction();
 	});
 	on("btn-undo", () => {
@@ -240,9 +269,14 @@ function setupBoardTouch(ctx: InputContext): void {
 			swiped = true;
 			const g = ctx.getGame();
 			if (!g.won) {
-				g.cursorPos = down.pos;
-				if (g.swapCursor(dy < 0 ? -1 : 1)) sfx.move();
-				else sfx.invalid();
+				if (g.lift) {
+					g.moveLift(dy < 0 ? -1 : 1);
+					sfx.select();
+				} else {
+					g.cursorPos = down.pos;
+					if (g.swapCursor(dy < 0 ? -1 : 1)) sfx.move();
+					else sfx.invalid();
+				}
 				ctx.afterAction();
 			}
 		}
@@ -252,17 +286,17 @@ function setupBoardTouch(ctx: InputContext): void {
 		if (!down || e.pointerId !== down.id) return;
 		const g = ctx.getGame();
 		if (!swiped && !g.won) {
-			g.cursorPos = down.pos;
-			if (g.combine) {
-				if (g.combine.sourcePos === down.pos) {
-					g.cancelCombine();
+			if (g.lift) {
+				if (g.lift.sourcePos === down.pos) {
+					g.cancelLift();
 					sfx.select();
-				} else if (g.confirmCombine(down.pos)) {
-					sfx.combine();
 				} else {
-					sfx.invalid();
+					g.setLiftTarget(down.pos);
+					if (g.applyLift()) sfx.combine();
+					else sfx.invalid();
 				}
 			} else {
+				g.cursorPos = down.pos;
 				sfx.select();
 			}
 			ctx.afterAction();

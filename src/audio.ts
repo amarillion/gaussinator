@@ -48,6 +48,10 @@ function tone(
 export const sfx = {
 	select: () => tone(520, 0.06, "sine", 0.08),
 	move: () => tone(330, 0.09, "triangle", 0.1),
+	lift: () => {
+		tone(440, 0.07, "sine", 0.08);
+		tone(660, 0.08, "sine", 0.08, 0.06);
+	},
 	scale: () => tone(760, 0.1, "sine", 0.1),
 	combine: () => {
 		tone(500, 0.08, "sine", 0.1);

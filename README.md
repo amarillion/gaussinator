@@ -54,9 +54,12 @@ at the bottom.
 | `↑` `↓` (or `K` `J`) | Select row |
 | `Shift+↑` / `Shift+↓` | Move (swap) the selected row |
 | `0-9`, `-`, `/`, `Backspace` | Edit the multiplier `k` (e.g. `-3/4`) |
-| `M` | Multiply selected row by `k` |
-| `A` / `S` | Add / subtract `k×` selected row — then pick target with `↑` `↓` and `Enter` |
-| `Esc` / `C` | Cancel combine / reset `k` to 1 |
+| `M` | Multiply selected row by `k` (while a row is lifted: multiply the lifted copy) |
+| `→` | Lift a copy of the selected row to the right side |
+| `↑` `↓` while lifted | Align the lifted copy with a target row |
+| `Enter` / `Space` while lifted | Add the lifted copy to the aligned target row |
+| `Esc` / `←` while lifted | Cancel the lift and return the copy |
+| `Esc` / `C` | Cancel lift / reset `k` to 1 |
 | `U` / `H` / `R` | Undo / Hint / Restart |
 | `?` | Reopen tutorial |
 | `Enter` / `Space` | Next level after a win |
@@ -65,7 +68,8 @@ at the bottom.
 
 - **Tap** a row to select it
 - **Swipe** a row up/down to swap it with its neighbor
-- Use the `k` quick buttons (`½ ⅓ 2 3 −1`) and the toolbar (`×k`, `+k`, `−k`, swap, undo, hint, restart)
+- Use the `k` quick buttons (`½ ⅓ 2 3 −1`) and the toolbar (`×k`, `→ Lift`, swap, undo, hint, restart)
+- While a row is lifted, tap the target row to apply the lifted copy
 
 ## Project structure
 

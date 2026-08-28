@@ -26,15 +26,20 @@ function setText(id: string, text: string): void {
 
 export class Renderer {
 	private board: HTMLElement;
+	private rail: HTMLElement | null;
 	private tiles = new Map<string, HTMLElement>();
 	private cells = new Map<string, HTMLElement>();
+	private liftTiles = new Map<number, HTMLElement>();
+	private liftCells = new Map<number, HTMLElement>();
 	private last = new Map<string, string>();
+	private lastLift = new Map<string, string>();
 	private tileW = 60;
 	private tileH = 54;
 	private gap = 8;
 
 	constructor(board: HTMLElement) {
 		this.board = board;
+		this.rail = document.getElementById("lift-rail");
 	}
 
 	layout(n: number, m: number): void {
@@ -48,6 +53,10 @@ export class Renderer {
 		this.board.style.width = `${m * this.tileW + (m + 1) * this.gap}px`;
 		this.board.style.height = `${n * this.tileH + (n + 1) * this.gap}px`;
 		this.board.style.setProperty("--tile-font", `${Math.max(13, Math.floor(this.tileW * 0.38))}px`);
+		if (this.rail) {
+			this.rail.style.height = this.board.style.height;
+			this.rail.style.setProperty("--tile-font", this.board.style.getPropertyValue("--tile-font"));
+		}
 	}
 
 	setBoardSize(n: number, m: number): void {
@@ -68,6 +77,22 @@ export class Renderer {
 				this.cells.set(key, cell);
 			}
 		}
+		if (this.rail) {
+			this.rail.innerHTML = "";
+			this.liftTiles.clear();
+			this.liftCells.clear();
+			this.lastLift.clear();
+			for (let c = 0; c < m; c++) {
+				const tile = document.createElement("div");
+				tile.className = "tile lift";
+				const cell = document.createElement("div");
+				cell.className = "cell lift";
+				tile.appendChild(cell);
+				this.rail.appendChild(tile);
+				this.liftTiles.set(c, tile);
+				this.liftCells.set(c, cell);
+			}
+		}
 		this.layout(n, m);
 	}
 
@@ -75,6 +100,13 @@ export class Renderer {
 		const n = game.n;
 		const m = game.m;
 		if (this.tiles.size !== n * m) this.setBoardSize(n, m);
+		this.layout(n, m);
+
+		const lift = game.lift;
+		if (this.rail) {
+			const railW = lift ? this.tileW + 2 * this.gap : 0;
+			this.rail.style.width = `${railW}px`;
+		}
 
 		for (const [ key, tile ] of this.tiles) {
 			const [ r, c ] = key.split(":").map(Number);
@@ -86,38 +118,54 @@ export class Renderer {
 			tile.style.transform = `translate(${x}px, ${y}px)`;
 
 			const cell = this.cells.get(key)!;
-			const val = game.rows[r][c];
-			const html = fracHTML(val);
-			if (this.last.get(key) !== html) {
-				cell.innerHTML = html;
-				this.last.set(key, html);
-				cell.classList.remove("pop");
-				void cell.offsetWidth; // restart the pop animation
-				cell.classList.add("pop");
-			}
+			this.paintValue(cell, game.rows[r][c], key, this.last);
 
-			cell.classList.toggle("zero", val.isZero());
-			for (let t = 0; t <= 11; t++) {
-				cell.classList.remove(`pos-${t}`, `neg-${t}`);
-			}
-			if (!val.isZero()) {
-				const sign = val.n < 0n ? "neg" : "pos";
-				cell.classList.add(`${sign}-${tierOf(val)}`);
-			}
-
-			cell.classList.toggle("cursor", pos === game.cursorPos && !game.combine);
-			if (game.combine) {
-				cell.classList.toggle("src", pos === game.combine.sourcePos);
-				cell.classList.toggle("target", pos === game.cursorPos);
+			cell.classList.remove("cursor", "src", "target");
+			if (lift) {
+				cell.classList.toggle("src", pos === lift.sourcePos);
+				cell.classList.toggle("target", pos === lift.targetPos);
 			} else {
-				cell.classList.remove("src", "target");
+				cell.classList.toggle("cursor", pos === game.cursorPos);
 			}
 			cell.classList.toggle("hint", hintRows !== null && hintRows.includes(pos));
+		}
+
+		if (this.rail && lift) {
+			const src = game.rows[lift.sourceId];
+			for (const [ c, tile ] of this.liftTiles) {
+				const x = this.gap;
+				const y = this.gap + lift.targetPos * (this.tileH + this.gap);
+				tile.style.width = `${this.tileW}px`;
+				tile.style.height = `${this.tileH}px`;
+				tile.style.transform = `translate(${x}px, ${y}px)`;
+				const cell = this.liftCells.get(c)!;
+				this.paintValue(cell, src[c].mul(lift.factor), String(c), this.lastLift);
+			}
 		}
 
 		this.updateStats(game);
 		this.updateBadge(game);
 		setText("k-value", game.kString);
+	}
+
+	private paintValue(cell: HTMLElement, val: Rational, key: string, last: Map<string, string>): void {
+		const html = fracHTML(val);
+		if (last.get(key) !== html) {
+			cell.innerHTML = html;
+			last.set(key, html);
+			cell.classList.remove("pop");
+			void cell.offsetWidth; // restart the pop animation
+			cell.classList.add("pop");
+		}
+
+		cell.classList.toggle("zero", val.isZero());
+		for (let t = 0; t <= 11; t++) {
+			cell.classList.remove(`pos-${t}`, `neg-${t}`);
+		}
+		if (!val.isZero()) {
+			const sign = val.n < 0n ? "neg" : "pos";
+			cell.classList.add(`${sign}-${tierOf(val)}`);
+		}
 	}
 
 	private updateStats(game: Game): void {
