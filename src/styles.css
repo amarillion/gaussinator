@@ -210,20 +210,33 @@ header {
 
 /* Left multiplier dial: a column of factor tiles with 1 in the center,
    scrubbed vertically with a drag. */
-#factor-rail {
+factor-dial {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   flex: 0 0 auto;
+  align-self: stretch;
   touch-action: none;
 }
 
-.k-tiles-wrap { position: relative; }
+factor-dial[disabled] {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.k-tiles-wrap {
+  position: relative;
+  width: 44px;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
 
 .k-sign {
   width: 44px;
   height: 30px;
+  flex: 0 0 auto;
   border: none;
   border-radius: 8px;
   background: #cdc1b4;
@@ -237,11 +250,14 @@ header {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .k-tile {
   width: 44px;
-  height: var(--rail-tile-h, 20px);
+  flex: 1 1 0;
+  min-height: 12px;
   border: none;
   border-radius: 5px;
   background: #cdc1b4;
@@ -268,7 +284,6 @@ header {
   position: absolute;
   left: 0;
   width: 44px;
-  height: var(--rail-tile-h, 20px);
   border: 2px solid #fff;
   border-radius: 6px;
   background: transparent;

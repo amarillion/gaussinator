@@ -91,6 +91,8 @@ src/
     render.ts         board rendering and animations
     input.ts          keyboard, buttons, touch/swipe
     tutorial.ts       first-run tutorial overlay
+    components/
+      factor-dial.ts  <factor-dial> multiplier dial custom element
 origData/
   icon.svg            source logo (3x3 matrix, lifted middle row)
   makefile            rasterizes the PWA icons into public/ (run `make`)

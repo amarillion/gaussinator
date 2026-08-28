@@ -216,6 +216,8 @@ src/
     render.ts         board tiles, animations, stats, overlays
     input.ts          keyboard, buttons, board touch/swipe
     tutorial.ts       first-run tutorial overlay
+    components/
+      factor-dial.ts  <factor-dial> multiplier dial custom element
 index.html            static UI shell (all element ids live here)
 ```
 

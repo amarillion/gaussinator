@@ -3,8 +3,11 @@ import { Game, computeStars } from "./game/state";
 import { getHint } from "./game/hint";
 import { Renderer } from "./ui/render";
 import { setupInput } from "./ui/input";
+import { FactorDial } from "./ui/components/factor-dial";
 import { initTutorial, showTutorial, hideTutorial } from "./ui/tutorial";
 import { setSound } from "./audio";
+
+customElements.define("factor-dial", FactorDial);
 
 const seedBase = (Math.floor(Math.random() * 0x7fffffff) ^ Date.now()) >>> 0;
 
@@ -13,6 +16,7 @@ let hintRows: number[] | null = null;
 let lastMoves = 0;
 
 const renderer = new Renderer(document.getElementById("board")!);
+const factorDial = document.getElementById("factor-dial") as FactorDial | null;
 
 const bestKey = (n: number, m: number) => `rref.best.${n}x${m}`;
 
@@ -50,6 +54,8 @@ function afterAction(): void {
 		lastMoves = game.moves;
 	}
 	renderer.render(game, hintRows);
+	factorDial?.setSelection(game.kIndex, game.kNegative);
+	factorDial?.toggleAttribute("disabled", game.won);
 	renderer.setHint(game.hintText);
 	if (game.won) {
 		renderer.showWin(computeStars(game.moves, game.par), game.moves, game.par, game.best, game.newRecord);
@@ -107,6 +113,17 @@ setupInput({
 	showHint,
 	showTutorial,
 	toggleSound,
+});
+
+factorDial?.addEventListener("factor-change", e => {
+	if (game.won) return;
+	game.setKIndex((e as CustomEvent<{ index: number }>).detail.index);
+	afterAction();
+});
+factorDial?.addEventListener("factor-sign", () => {
+	if (game.won) return;
+	game.toggleKSign();
+	afterAction();
 });
 
 window.addEventListener("resize", () => {
