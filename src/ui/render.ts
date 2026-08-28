@@ -104,7 +104,7 @@ export class Renderer {
 
 		const lift = game.lift;
 		if (this.rail) {
-			const railW = lift ? this.tileW + 2 * this.gap : 0;
+			const railW = lift ? m * this.tileW + (m + 1) * this.gap : 0;
 			this.rail.style.width = `${railW}px`;
 		}
 
@@ -133,7 +133,7 @@ export class Renderer {
 		if (this.rail && lift) {
 			const src = game.rows[lift.sourceId];
 			for (const [ c, tile ] of this.liftTiles) {
-				const x = this.gap;
+				const x = this.gap + c * (this.tileW + this.gap);
 				const y = this.gap + lift.targetPos * (this.tileH + this.gap);
 				tile.style.width = `${this.tileW}px`;
 				tile.style.height = `${this.tileH}px`;
