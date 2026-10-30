@@ -82,7 +82,9 @@ export class RrefBoard extends HTMLElement {
 		const containerW = wrap ? wrap.clientWidth : window.innerWidth;
 		const dial = this.parentElement?.querySelector<HTMLElement>("factor-dial");
 		const dialW = (dial?.offsetWidth || FACTOR_DIAL_WIDTH) + 10; // dial pair + board-row gap
-		const widthBudget = Math.max(96, containerW / 2 - dialW);
+		// Split the remaining width between the board and its lift rail, so the
+		// board can use the space the old single dial did not need.
+		const widthBudget = Math.max(96, (containerW - dialW - 8) / 2);
 		const maxH = Math.max(240, window.innerHeight - 330);
 		let tw = Math.max(30, Math.min(widthBudget / m, maxH / n, 108));
 		this.gap = Math.max(4, Math.round(tw * 0.12));
