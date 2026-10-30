@@ -87,28 +87,6 @@ export class GameApp extends HTMLElement {
 			else sfx.invalid();
 			this.afterAction();
 		});
-		this.bind("btn-swap-up", () => {
-			const g = this.game;
-			if (g.lift) {
-				g.moveLift(-1);
-				sfx.select();
-			} else {
-				if (g.swapCursor(-1)) sfx.move();
-				else sfx.invalid();
-			}
-			this.afterAction();
-		});
-		this.bind("btn-swap-down", () => {
-			const g = this.game;
-			if (g.lift) {
-				g.moveLift(1);
-				sfx.select();
-			} else {
-				if (g.swapCursor(1)) sfx.move();
-				else sfx.invalid();
-			}
-			this.afterAction();
-		});
 		this.bind("btn-undo", () => {
 			if (this.game.undo()) sfx.move();
 			else sfx.invalid();
@@ -156,6 +134,14 @@ export class GameApp extends HTMLElement {
 				this.game.setCursor(pos);
 				sfx.select();
 			}
+			this.afterAction();
+		});
+		this.board.addEventListener("row-reorder", e => {
+			if (this.game.won) return;
+			const { rowId, direction } = (e as CustomEvent<{ rowId: number, direction: number }>).detail;
+			this.hintRows = null;
+			if (this.game.swapRow(rowId, direction)) sfx.move();
+			else sfx.invalid();
 			this.afterAction();
 		});
 		this.board.addEventListener("row-swipe", e => {

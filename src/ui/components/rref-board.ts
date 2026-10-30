@@ -48,6 +48,7 @@ export class RrefBoard extends HTMLElement {
 	private cells = new Map<string, HTMLElement>();
 	private liftTiles = new Map<number, HTMLElement>();
 	private liftCells = new Map<number, HTMLElement>();
+	private handles = new Map<number, HTMLElement>();
 	private last = new Map<string, string>();
 	private lastLift = new Map<string, string>();
 	private rail: HTMLElement | null = null;
@@ -59,6 +60,15 @@ export class RrefBoard extends HTMLElement {
 
 	private down: { x: number, y: number, pos: number, id: number, fromRail: boolean } | null = null;
 	private swiped = false;
+	private handleDrag: {
+		pointerId: number,
+		rowId: number,
+		startY: number,
+		startPos: number,
+		currentPos: number,
+		step: number,
+		moved: boolean,
+	} | null = null;
 
 	connectedCallback(): void {
 		this.addEventListener("pointerdown", this.onPointerDown);
@@ -107,6 +117,8 @@ export class RrefBoard extends HTMLElement {
 		this.tiles.clear();
 		this.cells.clear();
 		this.last.clear();
+		this.handles.clear();
+		this.handleDrag = null;
 
 		this.rail = document.createElement("div");
 		this.rail.className = "lift-rail";
@@ -140,6 +152,18 @@ export class RrefBoard extends HTMLElement {
 			this.rail.appendChild(tile);
 			this.liftTiles.set(c, tile);
 			this.liftCells.set(c, cell);
+		}
+
+		for (let r = 0; r < n; r++) {
+			const handle = document.createElement("button");
+			handle.type = "button";
+			handle.className = "row-handle";
+			handle.dataset.row = String(r);
+			handle.setAttribute("aria-label", `Drag row ${r + 1} to reorder`);
+			handle.title = `Drag row ${r + 1} to reorder`;
+			handle.textContent = "⠿";
+			this.appendChild(handle);
+			this.handles.set(r, handle);
 		}
 
 		this.layout(n, m);
@@ -180,6 +204,17 @@ export class RrefBoard extends HTMLElement {
 				cell.classList.toggle("cursor", pos === view.cursorPos);
 			}
 			cell.classList.toggle("hint", view.hintRows !== null && view.hintRows.includes(pos));
+		}
+
+		const boardW = m * this.tileW + (m + 1) * this.gap;
+		for (const [ rowId, handle ] of this.handles) {
+			const pos = view.order.indexOf(rowId);
+			if (pos < 0) continue;
+			handle.style.width = "44px";
+			handle.style.height = `${this.tileH}px`;
+			handle.style.transform = `translate(${boardW + 4}px, ${this.gap + pos * (this.tileH + this.gap)}px)`;
+			handle.dataset.pos = String(pos);
+			handle.classList.toggle("hidden", !!lift);
 		}
 
 		if (this.rail && lift) {
@@ -223,6 +258,27 @@ export class RrefBoard extends HTMLElement {
 	private readonly onPointerDown = (e: PointerEvent): void => {
 		if (this.hasAttribute("disabled")) return;
 		const target = e.target as HTMLElement;
+		const handle = target.closest<HTMLElement>(".row-handle");
+		if (handle) {
+			if (this.lift) return;
+			const rowId = Number(handle.dataset.row);
+			const pos = this.order.indexOf(rowId);
+			if (!Number.isFinite(rowId) || pos < 0) return;
+			this.down = null;
+			this.setPointerCapture(e.pointerId);
+			this.handleDrag = {
+				pointerId: e.pointerId,
+				rowId,
+				startY: e.clientY,
+				startPos: pos,
+				currentPos: pos,
+				step: this.tileH + this.gap,
+				moved: false,
+			};
+			handle.classList.add("dragging");
+			e.preventDefault();
+			return;
+		}
 		// The rail is a child of the board, so it shares this gesture surface;
 		// only its pointer-events need toggling when a row is lifted.
 		if (target.closest(".lift-rail")) {
@@ -252,6 +308,23 @@ export class RrefBoard extends HTMLElement {
 	};
 
 	private readonly onPointerMove = (e: PointerEvent): void => {
+		if (this.handleDrag && e.pointerId === this.handleDrag.pointerId) {
+			const drag = this.handleDrag;
+			const targetPos = Math.max(0, Math.min(
+				this.order.length - 1,
+				drag.startPos + Math.round((e.clientY - drag.startY) / drag.step),
+			));
+			if (targetPos !== drag.currentPos) {
+				drag.moved = true;
+				while (drag.currentPos !== targetPos) {
+					const direction = targetPos > drag.currentPos ? 1 : -1;
+					drag.currentPos += direction;
+					this.emit("row-reorder", { rowId: drag.rowId, direction });
+				}
+			}
+			e.preventDefault();
+			return;
+		}
 		if (!this.down || e.pointerId !== this.down.id) return;
 		const dy = e.clientY - this.down.y;
 		const dx = e.clientX - this.down.x;
@@ -267,12 +340,25 @@ export class RrefBoard extends HTMLElement {
 	};
 
 	private readonly onPointerUp = (e: PointerEvent): void => {
+		if (this.handleDrag && e.pointerId === this.handleDrag.pointerId) {
+			const drag = this.handleDrag;
+			this.handleDrag = null;
+			this.handles.get(drag.rowId)?.classList.remove("dragging");
+			if (this.hasPointerCapture(e.pointerId)) this.releasePointerCapture(e.pointerId);
+			if (!drag.moved) this.emit("row-tap", { pos: this.order.indexOf(drag.rowId) });
+			return;
+		}
 		if (!this.down || e.pointerId !== this.down.id) return;
 		if (!this.swiped && !this.down.fromRail) this.emit("row-tap", { pos: this.down.pos });
 		this.down = null;
 	};
 
 	private readonly onPointerCancel = (e: PointerEvent): void => {
+		if (this.handleDrag && e.pointerId === this.handleDrag.pointerId) {
+			this.handles.get(this.handleDrag.rowId)?.classList.remove("dragging");
+			this.handleDrag = null;
+			return;
+		}
 		if (this.down && e.pointerId === this.down.id) this.down = null;
 	};
 }

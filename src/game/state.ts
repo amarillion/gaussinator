@@ -285,6 +285,13 @@ export class Game {
 		return this.swapAt(this.cursorPos, delta);
 	}
 
+	/** Move a specific row by one display step (used by the drag handles). */
+	swapRow(rowId: number, delta: number): boolean {
+		const pos = this.order.indexOf(rowId);
+		if (pos < 0) return false;
+		return this.swapAt(pos, delta);
+	}
+
 	undo(): boolean {
 		const s = this.history.pop();
 		if (!s) return false;

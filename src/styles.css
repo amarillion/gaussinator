@@ -120,6 +120,31 @@ rref-board[disabled] { pointer-events: none; }
 .lift-rail .tile { pointer-events: none; }
 .lift-rail.active .tile { pointer-events: auto; }
 
+.row-handle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #a89f92;
+  font-size: 22px;
+  line-height: 1;
+  cursor: grab;
+  touch-action: none;
+  outline: none;
+  z-index: 1;
+}
+
+.row-handle:hover { color: var(--text); background: rgba(205, 193, 180, 0.55); }
+.row-handle.dragging { cursor: grabbing; color: var(--accent); background: rgba(246, 124, 95, 0.14); }
+.row-handle:focus-visible { box-shadow: 0 0 0 3px var(--accent); }
+
 .cell.lift {
   opacity: 0.9;
   box-shadow: 0 0 0 3px var(--accent);
