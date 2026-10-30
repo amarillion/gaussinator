@@ -23,10 +23,11 @@ scrollable number dials:
 
 ## Implementation steps
 
-- [ ] **1. Plan** — add this document.
-- [ ] **2. Game state** — replace `kIndex` / `kNegative` / `K_TILES` with
+- [x] **1. Plan** — add this document.
+- [x] **2. Game state** — replace `kIndex` / `kNegative` / `K_TILES` with
   `kNumerator` / `kDenominator`, keep clamping and lift syncing exact, and
-  update/extend Vitest coverage.
+  update/extend Vitest coverage. (Temporary compatibility aliases keep the old
+  rail compiling until step 3.)
 - [ ] **3. Number dial component** — build the reusable scrolling scale with
   drag, momentum, rubber-band edges, snapping, keyboard support, and the
   centralized tuning constants.

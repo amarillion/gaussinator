@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { Rational } from "../math/rational";
 import { Matrix } from "../math/matrix";
-import { Game, K_CENTER_INDEX, K_TILES, computeStars } from "./state";
+import {
+	Game,
+	K_CENTER_INDEX,
+	K_DENOMINATOR_MAX,
+	K_DENOMINATOR_MIN,
+	K_NUMERATOR_MAX,
+	K_NUMERATOR_MIN,
+	K_TILES,
+	computeStars,
+} from "./state";
 
 function M(rows: (number | string)[][]): Matrix {
 	return rows.map(row => row.map(x => (typeof x === "number" ? new Rational(x) : Rational.parse(x)!)));
@@ -22,6 +31,62 @@ describe("K rail", () => {
 		expect(K_TILES[0].toString()).toBe("9");
 		expect(K_TILES[K_CENTER_INDEX + 1].toString()).toBe("1/2");
 		expect(K_TILES[K_TILES.length - 1].toString()).toBe("1/9");
+	});
+});
+
+describe("numerator / denominator factor", () => {
+	it("builds exact fractions from the two dials", () => {
+		const g = new Game(0, 1);
+		expect(g.kNumerator).toBe(1);
+		expect(g.kDenominator).toBe(1);
+		g.setK(2, 3);
+		expect(g.k.toString()).toBe("2/3");
+		g.setK(-4, 5);
+		expect(g.k.toString()).toBe("-4/5");
+		g.setK(6, 3);
+		expect(g.k.toString()).toBe("2");
+	});
+
+	it("clamps the numerator to -20..20 and the denominator to 1..20", () => {
+		const g = new Game(0, 1);
+		g.setK(-99, 0);
+		expect(g.kNumerator).toBe(K_NUMERATOR_MIN);
+		expect(g.kDenominator).toBe(K_DENOMINATOR_MIN);
+		g.setK(99, 99);
+		expect(g.kNumerator).toBe(K_NUMERATOR_MAX);
+		expect(g.kDenominator).toBe(K_DENOMINATOR_MAX);
+	});
+
+	it("moves the numerator and denominator independently", () => {
+		const g = new Game(0, 1);
+		g.moveNumerator(2);
+		g.moveDenominator(3);
+		expect(g.k.toString()).toBe("3/4");
+		g.moveNumerator(-5);
+		expect(g.k.toString()).toBe("-1/2");
+	});
+
+	it("keeps the lifted copy in sync with a fractional factor", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 1, 0 ], [ 2, 1 ] ]);
+		g.order = [ 0, 1 ];
+		g.cursorPos = 0;
+		g.setK(2, 3);
+		g.liftRow();
+		expect(g.lift?.factor.toString()).toBe("2/3");
+		g.setK(-5, 7);
+		expect(g.lift?.factor.toString()).toBe("-5/7");
+	});
+
+	it("scales a row by an exact fraction", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 3, 6 ], [ 0, 1 ] ]);
+		g.order = [ 0, 1 ];
+		g.cursorPos = 0;
+		g.setK(2, 3);
+		g.startScaleMode();
+		expect(g.applyScale()).toBe(true);
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
 	});
 });
 

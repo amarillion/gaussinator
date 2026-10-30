@@ -24,7 +24,19 @@ export interface Lift {
 	factor: Rational,
 }
 
-/** The multiplier rail: 9 … 2, 1, 1/2 … 1/9 (index 8 is the center 1). */
+/** Numerator dial range, inclusive. Zero is selectable but illegal to apply. */
+export const K_NUMERATOR_MIN = -20;
+export const K_NUMERATOR_MAX = 20;
+/** Denominator dial range, inclusive (shown as 1/1 … 1/20). */
+export const K_DENOMINATOR_MIN = 1;
+export const K_DENOMINATOR_MAX = 20;
+export const K_DEFAULT_NUMERATOR = 1;
+export const K_DEFAULT_DENOMINATOR = 1;
+
+/*
+ * Temporary compatibility aliases for the old single-rail UI. Remove once the
+ * two-dial component lands.
+ */
 export const K_TILES: readonly Rational[] = [
 	new Rational(9),
 	new Rational(8),
@@ -69,10 +81,10 @@ export class Game {
 	rows: Matrix;
 	order: number[];
 	cursorPos = 0;
-	/** Selected multiplier-rail tile; `k` is always derived from this. */
-	kIndex = K_CENTER_INDEX;
-	/** True when the minus key toggled the rail factor negative. */
-	kNegative = false;
+	/** Selected numerator; the factor is `kNumerator / kDenominator`. */
+	kNumerator = K_DEFAULT_NUMERATOR;
+	/** Selected denominator, always in [K_DENOMINATOR_MIN, K_DENOMINATOR_MAX]. */
+	kDenominator = K_DEFAULT_DENOMINATOR;
 	/** In-place scaling mode, started with M and confirmed with Enter. */
 	pendingScale = false;
 	lift: Lift | null = null;
@@ -106,10 +118,21 @@ export class Game {
 		return this.generated.start;
 	}
 
-	/** Current multiplier: the selected rail tile, optionally negated. */
+	/** Current exact multiplier: selected numerator divided by denominator. */
 	get k(): Rational {
-		const r = K_TILES[this.kIndex];
-		return this.kNegative ? r.neg() : r;
+		return new Rational(BigInt(this.kNumerator), BigInt(this.kDenominator));
+	}
+
+	/** Temporary compatibility view for the old single rail UI. */
+	get kIndex(): number {
+		const k = this.k;
+		const index = K_TILES.findIndex(r => r.equals(k));
+		return index >= 0 ? index : K_CENTER_INDEX;
+	}
+
+	/** Temporary compatibility view for the old single rail UI. */
+	get kNegative(): boolean {
+		return this.kNumerator < 0;
 	}
 
 	displayMatrix(): Matrix {
@@ -124,31 +147,46 @@ export class Game {
 		return isRREF(this.displayMatrix());
 	}
 
-	/** PgUp = -1, PgDn = +1. The lifted copy follows immediately. */
-	moveK(delta: number): void {
-		if (this.won) return;
-		this.kIndex = clamp(this.kIndex + delta, 0, K_TILES.length - 1);
+	/** Set both dials, clamping to their legal range. The lift follows at once. */
+	setK(numerator: number, denominator: number): void {
+		this.kNumerator = clamp(Math.round(numerator), K_NUMERATOR_MIN, K_NUMERATOR_MAX);
+		this.kDenominator = clamp(Math.round(denominator), K_DENOMINATOR_MIN, K_DENOMINATOR_MAX);
 		this.syncLiftFactor();
 	}
 
-	/** Click/tap a rail tile directly. */
+	/** PgUp/PgDn: move the numerator by delta. */
+	moveNumerator(delta: number): void {
+		if (this.won) return;
+		this.setK(this.kNumerator + delta, this.kDenominator);
+	}
+
+	/** Shift+PgUp/Shift+PgDn: move the denominator by delta. */
+	moveDenominator(delta: number): void {
+		if (this.won) return;
+		this.setK(this.kNumerator, this.kDenominator + delta);
+	}
+
+	/** Temporary compatibility wrapper for the old single rail UI. */
+	moveK(delta: number): void {
+		if (this.won) return;
+		this.setKIndex(this.kIndex + delta);
+	}
+
+	/** Temporary compatibility wrapper for the old single rail UI. */
 	setKIndex(index: number): void {
 		if (this.won) return;
-		this.kIndex = clamp(Math.round(index), 0, K_TILES.length - 1);
-		this.syncLiftFactor();
+		const r = K_TILES[clamp(Math.round(index), 0, K_TILES.length - 1)];
+		this.setK(Number(r.n), Number(r.d));
 	}
 
 	/** Minus key: toggle the sign of the current factor. */
 	toggleKSign(): void {
 		if (this.won) return;
-		this.kNegative = !this.kNegative;
-		this.syncLiftFactor();
+		this.setK(-this.kNumerator, this.kDenominator);
 	}
 
 	resetK(): void {
-		this.kIndex = K_CENTER_INDEX;
-		this.kNegative = false;
-		this.syncLiftFactor();
+		this.setK(K_DEFAULT_NUMERATOR, K_DEFAULT_DENOMINATOR);
 	}
 
 	moveCursor(delta: number): void {
