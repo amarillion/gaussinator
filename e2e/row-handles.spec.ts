@@ -25,6 +25,7 @@ async function dragHandle(page: Page, rowId: number, distanceY: number): Promise
 	await page.mouse.down();
 	await page.mouse.move(x, y + distanceY, { steps: 5 });
 	await page.mouse.up();
+	await page.waitForTimeout(180);
 }
 
 test.describe("row drag handles", () => {
@@ -60,5 +61,24 @@ test.describe("row drag handles", () => {
 		await expect(handle(page, 0)).toHaveAttribute("data-pos", "1");
 		await expect(handle(page, 1)).toHaveAttribute("data-pos", "0");
 		await expect(page.locator('[data-stat="moves"]')).toHaveText("1");
+	});
+
+	test("groups a sequence of swaps of the same row into one move", async ({ page }) => {
+		await openGame(page);
+		const first = await handle(page, 0).boundingBox();
+		const second = await handle(page, 1).boundingBox();
+		expect(first).not.toBeNull();
+		expect(second).not.toBeNull();
+		const step = second!.y - first!.y;
+
+		await dragHandle(page, 0, step);
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("1");
+		await dragHandle(page, 0, -step);
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("1");
+		await expect(handle(page, 0)).toHaveAttribute("data-pos", "0");
+
+		await page.keyboard.press("u");
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("0");
+		await expect(handle(page, 0)).toHaveAttribute("data-pos", "0");
 	});
 });

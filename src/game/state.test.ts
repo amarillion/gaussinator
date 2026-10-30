@@ -244,6 +244,29 @@ describe("Game", () => {
 		expect(g.cursorPos).toBe(1);
 	});
 
+	it("groups repeated swaps of the same row into one move and one undo", () => {
+		const g = new Game(1, 1);
+		g.rows = M([ [ 1 ], [ 2 ], [ 3 ] ]);
+		g.order = [ 0, 1, 2 ];
+		g.cursorPos = 0;
+		expect(g.swapCursor(1)).toBe(true);
+		expect(g.swapCursor(1)).toBe(true);
+		expect(g.order).toEqual([ 1, 2, 0 ]);
+		expect(g.moves).toBe(1);
+		expect(g.undo()).toBe(true);
+		expect(g.order).toEqual([ 0, 1, 2 ]);
+		expect(g.moves).toBe(0);
+	});
+
+	it("starts a new swap run when a different row moves", () => {
+		const g = new Game(1, 1);
+		g.rows = M([ [ 1 ], [ 2 ], [ 3 ] ]);
+		g.order = [ 0, 1, 2 ];
+		expect(g.swapAt(0, 1)).toBe(true); // row 0 moves
+		expect(g.swapAt(0, 1)).toBe(true); // row 1 now moves
+		expect(g.moves).toBe(2);
+	});
+
 	it("undo restores the previous state exactly", () => {
 		const g = new Game(0, 1);
 		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);

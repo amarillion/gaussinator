@@ -256,7 +256,7 @@ export class GameApp extends HTMLElement {
 	}
 
 	private afterAction(): void {
-		if (this.game.moves !== this.lastMoves) {
+		if (this.game.moves !== this.lastMoves || this.game.hintText === null) {
 			this.hintRows = null;
 			this.game.hintText = null;
 			this.lastMoves = this.game.moves;

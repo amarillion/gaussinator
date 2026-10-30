@@ -72,6 +72,8 @@ export class Game {
 	lift: Lift | null = null;
 	/** Row whose current run of live scale changes shares one history entry/move. */
 	private scaleStreakRowId: number | null = null;
+	/** Row whose current run of swaps shares one history entry/move. */
+	private swapStreakRowId: number | null = null;
 	history: Snapshot[] = [];
 	moves = 0;
 	par: number;
@@ -136,6 +138,7 @@ export class Game {
 		const previous = this.k;
 		if (next.equals(previous)) return false;
 
+		this.swapStreakRowId = null;
 		const rowId = this.order[this.cursorPos];
 		if (this.scaleStreakRowId !== rowId) {
 			this.pushHistory();
@@ -217,6 +220,7 @@ export class Game {
 		const next = clamp(pos, 0, this.n - 1);
 		if (next === this.cursorPos) return;
 		this.resetK();
+		this.swapStreakRowId = null;
 		this.cursorPos = next;
 	}
 
@@ -228,6 +232,7 @@ export class Game {
 		if (this.won || this.lift) return false;
 		this.resetK();
 		this.resetLiftK();
+		this.swapStreakRowId = null;
 		this.lift = {
 			sourceId: this.order[this.cursorPos],
 			sourcePos: this.cursorPos,
@@ -266,18 +271,26 @@ export class Game {
 		this.lift = null;
 		this.resetLiftK();
 		this.resetK();
+		this.swapStreakRowId = null;
 	}
 
 	swapAt(pos: number, delta: number): boolean {
 		if (this.won) return false;
 		const b = pos + delta;
 		if (b < 0 || b >= this.n) return false;
-		this.pushHistory();
+		const rowId = this.order[pos];
+		if (this.swapStreakRowId !== rowId) {
+			this.pushHistory();
+			this.swapStreakRowId = rowId;
+			this.moves++;
+		}
+		this.resetK();
 		const t = this.order[pos];
 		this.order[pos] = this.order[b];
 		this.order[b] = t;
 		this.cursorPos = b;
-		this.finishMove();
+		this.hintText = null;
+		this.checkWin();
 		return true;
 	}
 
@@ -304,6 +317,7 @@ export class Game {
 		this.newRecord = false;
 		this.resetK();
 		this.resetLiftK();
+		this.swapStreakRowId = null;
 		this.hintText = null;
 		return true;
 	}
@@ -319,6 +333,7 @@ export class Game {
 		this.newRecord = false;
 		this.resetK();
 		this.resetLiftK();
+		this.swapStreakRowId = null;
 		this.hintText = null;
 	}
 
@@ -350,6 +365,7 @@ export class Game {
 		this.moves++;
 		this.resetK();
 		this.resetLiftK();
+		this.swapStreakRowId = null;
 		this.hintText = null;
 		this.checkWin();
 	}
