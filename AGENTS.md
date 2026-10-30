@@ -40,12 +40,12 @@ src/math/rational.ts    Rational: BigInt num/den, reduced, den > 0, 0/1 for zero
 src/math/matrix.ts      Matrix = Rational[][]; swapRows/scaleRow/addMultiple;
                         isREF/isRREF; computeRREF (returns matrix + ops)
 src/math/generator.ts   levelSpec (sizes+depth), mulberry32 PRNG, generateLevel
-src/game/state.ts       Game class: rows, order, cursorPos, kNumerator/kDenominator,
-                        combine, history/undo, moves, par, best, win detection
+src/game/state.ts       Game class: rows, order, cursorPos, left/right factor
+                        drawers, live scale runs, history/undo, moves, par, best
 src/game/hint.ts        getHint: exact next-step suggestion {kind, rows, col, factor}
 src/ui/components/game-app.ts  root controller, keyboard, localStorage, resize
 src/ui/components/rref-board.ts matrix board + lift rail custom element
-src/ui/components/factor-dial.ts numerator + denominator dial pair
+src/ui/components/factor-dial.ts numerator + denominator dial pair for a drawer
 src/ui/components/number-dial.ts kinetic scrolling scale
 src/ui/components/dial-tuning.ts all dial feel/size constants
 src/ui/components/game-hud.ts  mode label, badge, hint box
@@ -77,13 +77,16 @@ playwright.config.ts    e2e config (starts Vite on port 4173)
    must be snapshotted too (or reset consistently in `undo`/`restart`).
 6. **Legal ops only.** Scaling requires non-zero k; add-multiple requires
    distinct rows and non-zero k. Keep these guards in both `Game` and the
-   `Matrix` helpers.
-7. **Animation split.** `.tile` owns `transform: translate(...)` and the
+   `Matrix` helpers. Zero is not a selectable numerator.
+7. **Scale runs score once.** Consecutive live scale changes to the same row
+   must share one move increment and one history snapshot; undo reverts the
+   whole run. Cursor moves/lifts/swaps/combines and other moves end the run.
+8. **Animation split.** `.tile` owns `transform: translate(...)` and the
    position transition. `.cell` owns colors/content and the `pop` keyframe.
    Never put a transform animation on `.tile` for content effects, and never
    position `.cell` with transforms.
-8. **Element id contract.** `index.html` ids are referenced by `render.ts`,
-   `input.ts`, and `main.ts`. If you rename/remove an id, update all
+9. **Element id contract.** `index.html` ids are referenced by `game-app.ts`,
+   the custom elements, and `main.ts`. If you rename/remove an id, update all
    references. Unknown ids are tolerated (optional chaining) but render
    failures are not.
 
@@ -99,6 +102,9 @@ playwright.config.ts    e2e config (starts Vite on port 4173)
 - Touch targets ≥ 44px; keep `touch-action: none` on `#board` and `number-dial`.
 - Keep every dial feel/size constant in `src/ui/components/dial-tuning.ts`;
   the dial component should read them rather than hard-code magic numbers.
+- The left factor drawer scales the selected row immediately; the right drawer
+  opens while a row is lifted and owns the lift factor. Keep the two factors
+  independent.
 - Keyboard handlers must `preventDefault()` on `Arrow*`, `Space`, `Backspace`,
   and `/` to stop page scroll/navigation.
 - Randomness in generation uses the seeded `mulberry32` PRNG so tests are

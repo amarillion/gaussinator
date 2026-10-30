@@ -72,7 +72,34 @@ describe("factor drawers", () => {
 		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
 		expect(g.setK(1, 3)).toBe(true);
 		expect(g.rows[0].map(x => x.toString())).toEqual([ "1", "2" ]);
+		expect(g.moves).toBe(1);
+	});
+
+	it("groups a run of scale changes on the same row into one move and one undo", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
+		g.order = [ 0, 1 ];
+		g.setK(2, 3);
+		g.setK(3, 2);
+		g.setK(5, 4);
+		expect(g.moves).toBe(1);
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "5/2", "5" ]);
+		expect(g.undo()).toBe(true);
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
+		expect(g.moves).toBe(0);
+	});
+
+	it("starts a new scored move after the cursor moves to another row", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 2, 2 ], [ 3, 3 ] ]);
+		g.order = [ 0, 1 ];
+		g.setK(2, 1);
+		g.setCursor(1);
+		g.setK(2, 1);
 		expect(g.moves).toBe(2);
+		expect(g.rows.map(row => row.map(x => x.toString()))).toEqual([ [ "4", "4" ], [ "6", "6" ] ]);
+		expect(g.undo()).toBe(true);
+		expect(g.rows[1].map(x => x.toString())).toEqual([ "3", "3" ]);
 	});
 
 	it("moves the numerator and denominator independently", () => {

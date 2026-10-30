@@ -135,6 +135,12 @@ the scrambled matrix. Stars:
 Best (minimum) moves are stored per board size in `localStorage` under
 `rref.best.{n}x{m}`.
 
+Live scaling is coalesced for scoring: a run of dial changes on the same
+selected row shares **one** move increment and **one** history snapshot. Undo
+therefore reverts the whole run. Moving the cursor, starting a lift, swapping,
+combining, or any other completed move ends the run, so later scaling of the
+same row starts a new move.
+
 ## 6. Hint engine
 
 `getHint` (in `src/game/hint.ts`) computes the exact RREF of the current board,
@@ -197,6 +203,8 @@ involved so the UI can highlight them (and tests can auto-apply hints).
   row; the numerator is non-zero and in `[-20, -1] ∪ [1, 20]`, the denominator
   in `[1, 20]`,
 - `liftNumerator` / `liftDenominator`: right-drawer factor for the lifted row,
+- `scaleStreakRowId`: the row id whose current run of live scaling shares one
+  move/history snapshot (cleared when the run ends),
 - `lift`: `{ sourceId, sourcePos, targetPos, factor } | null` — a row copy
   currently lifted to the right side of the board. Its `factor` is always kept
   in sync with the right drawer, so the lifted copy is always the original row
@@ -206,8 +214,9 @@ Stable row ids + `order` are what make row-swap animations possible: a tile is
 keyed by row id, so swapping two entries in `order` moves both rows' tiles
 smoothly while their contents stay attached.
 
-Every successful move pushes a history snapshot (`rows`, `order`, `moves`,
-`cursorPos`) for undo.
+A completed move pushes a history snapshot (`rows`, `order`, `moves`,
+`cursorPos`) for undo. A live scale run pushes only its first snapshot, so one
+undo restores the row to the state before the whole run.
 
 ## 8. Architecture
 
@@ -221,7 +230,7 @@ src/
     matrix.ts         Matrix ops, isREF/isRREF, computeRREF
     generator.ts      level spec, PRNG, RREF generation + scramble
   game/
-    state.ts          Game class: moves, undo, numerator/denominator k, win detection
+    state.ts          Game class: moves, undo, drawer factors, win detection
     hint.ts           next-step hint engine
   ui/
     components/
@@ -307,14 +316,15 @@ Vitest covers (see `*.test.ts`):
 - `Hint`: exact suggestions and an **auto-solver** that follows hints to
   completion for every generated level tested.
 - `Game`: factor selection/clamping, immediate row scaling, independent
-  left/right drawer factors, sign toggling, lift/swap, invalid-op rejection,
-  undo (including cursor restore), win detection and best-score callback.
+  left/right drawer factors, scale-run coalescing, sign toggling, lift/swap,
+  invalid-op rejection, undo (including cursor restore), win detection and
+  best-score callback.
 
 Playwright runs Chromium e2e tests in `e2e/` against a Vite dev server. They
 cover drawer switching, immediate left-drawer scaling, right-drawer lift
-factors, exact `2/3` selection, negative numerators, endpoint clamping,
-slow-drag snapping, flick momentum, and a narrow mobile viewport
-(`npm run test:e2e`).
+factors, exact `2/3` selection, scale-run move grouping and undo, negative
+numerators, endpoint clamping, slow-drag snapping, flick momentum, and a
+narrow mobile viewport (`npm run test:e2e`).
 
 ## 10. Known limitations / future ideas
 

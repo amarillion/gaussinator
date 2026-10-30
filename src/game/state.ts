@@ -70,6 +70,8 @@ export class Game {
 	liftNumerator = K_DEFAULT_NUMERATOR;
 	liftDenominator = K_DEFAULT_DENOMINATOR;
 	lift: Lift | null = null;
+	/** Row whose current run of live scale changes shares one history entry/move. */
+	private scaleStreakRowId: number | null = null;
 	history: Snapshot[] = [];
 	moves = 0;
 	par: number;
@@ -134,11 +136,15 @@ export class Game {
 		const previous = this.k;
 		if (next.equals(previous)) return false;
 
-		this.pushHistory();
-		scaleRow(this.rows, this.order[this.cursorPos], next.div(previous));
+		const rowId = this.order[this.cursorPos];
+		if (this.scaleStreakRowId !== rowId) {
+			this.pushHistory();
+			this.scaleStreakRowId = rowId;
+			this.moves++;
+		}
+		scaleRow(this.rows, rowId, next.div(previous));
 		this.kNumerator = nextNumerator;
 		this.kDenominator = nextDenominator;
-		this.moves++;
 		this.hintText = null;
 		this.checkWin();
 		return true;
@@ -162,10 +168,11 @@ export class Game {
 		return this.setK(-this.kNumerator, this.kDenominator);
 	}
 
-	/** Reset the left drawer to 1/1 without changing the row. */
+	/** End the current scale run and reset the left drawer to 1/1. */
 	resetK(): void {
 		this.kNumerator = K_DEFAULT_NUMERATOR;
 		this.kDenominator = K_DEFAULT_DENOMINATOR;
+		this.scaleStreakRowId = null;
 	}
 
 	/** Right drawer: change the lifted row's live multiplier. */
@@ -178,6 +185,7 @@ export class Game {
 		this.liftNumerator = nextNumerator;
 		this.liftDenominator = nextDenominator;
 		this.syncLiftFactor();
+		this.hintText = null;
 		return true;
 	}
 

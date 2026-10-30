@@ -124,13 +124,19 @@ export class GameApp extends HTMLElement {
 		this.scaleDial?.addEventListener("factor-change", e => {
 			if (this.game.won) return;
 			const { numerator, denominator } = (e as CustomEvent<{ numerator: number, denominator: number }>).detail;
-			if (this.game.setK(numerator, denominator)) sfx.scale();
+			if (this.game.setK(numerator, denominator)) {
+				this.hintRows = null;
+				sfx.scale();
+			}
 			this.afterAction();
 		});
 		this.liftDial?.addEventListener("factor-change", e => {
 			if (this.game.won) return;
 			const { numerator, denominator } = (e as CustomEvent<{ numerator: number, denominator: number }>).detail;
-			if (this.game.setLiftK(numerator, denominator)) sfx.select();
+			if (this.game.setLiftK(numerator, denominator)) {
+				this.hintRows = null;
+				sfx.select();
+			}
 			this.afterAction();
 		});
 

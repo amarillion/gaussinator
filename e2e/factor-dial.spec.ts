@@ -85,6 +85,33 @@ test.describe("factor drawers", () => {
 		await expect(den).toHaveAttribute("aria-valuetext", "1/3");
 
 		await expect(page.locator("#hud .mode-label")).toHaveText("Scale row 1 × 2/3 — left dial applies immediately");
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("1");
+	});
+
+	test("groups a run of scaling changes on the same row into one move", async ({ page }) => {
+		await openGame(page);
+		const num = numerator(page);
+		const den = denominator(page);
+
+		await num.focus();
+		await page.keyboard.press("ArrowUp");
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("1");
+
+		await den.focus();
+		await page.keyboard.press("ArrowUp");
+		await expect(den).toHaveAttribute("data-value", "2");
+		await page.keyboard.press("ArrowUp");
+		await expect(den).toHaveAttribute("data-value", "3");
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("1");
+
+		await page.keyboard.press("ArrowUp");
+		await expect(den).toHaveAttribute("data-value", "4");
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("1");
+
+		await page.keyboard.press("u");
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("0");
+		await expect(num).toHaveAttribute("data-value", "1");
+		await expect(den).toHaveAttribute("data-value", "1");
 	});
 
 	test("lifting a row swaps to the right drawer and applies its factor", async ({ page }) => {
@@ -160,12 +187,16 @@ test.describe("factor drawers", () => {
 		}
 		await page.mouse.up();
 
-		await page.waitForTimeout(2_200);
+		const atRelease = Number(await num.getAttribute("data-value"));
+		await page.waitForTimeout(250);
+		const inMotion = Number(await num.getAttribute("data-value"));
+		expect(inMotion).toBeGreaterThan(atRelease);
 
-		const value = Number(await num.getAttribute("data-value"));
-		expect(Number.isInteger(value)).toBe(true);
-		expect(value).toBeGreaterThan(4);
-		expect(value).toBeLessThanOrEqual(20);
+		await page.waitForTimeout(2_000);
+		const settled = Number(await num.getAttribute("data-value"));
+		expect(Number.isInteger(settled)).toBe(true);
+		expect(settled).toBeGreaterThanOrEqual(inMotion);
+		expect(settled).toBeLessThanOrEqual(20);
 	});
 
 	test("the open drawer and board fit on a narrow mobile viewport", async ({ page }) => {

@@ -1,3 +1,8 @@
+> Historical plan for the original two-dial factor control. A later
+> follow-up removed the zero numerator, split the dials into left/right
+> drawers, and made scale runs count as one move; see `README.md` and
+> `docs/design.md` for the current behaviour.
+
 # Factor dial redesign plan
 
 ## Goal
@@ -73,7 +78,7 @@ Defined in `src/ui/components/dial-tuning.ts`:
 
 ## Result
 
-All steps are implemented. `npm run lint`, `npm test` (43 tests), and
+All steps are implemented. `npm run lint`, `npm test` (44 tests), and
 `npm run build` pass; `npm run test:e2e` passes all 6 Chromium cases. The
 Playwright suite exercises dial rendering, exact `2/3` selection, negative
 numerators, range endpoints, slow-drag snapping, flick momentum, and a narrow

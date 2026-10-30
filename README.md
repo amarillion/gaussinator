@@ -12,6 +12,7 @@ decimals).
 - Exact `BigInt` rational math — fractions like `-3/4` are shown and combined exactly
 - Three legal row operations: **swap** rows, **scale** a row by a non-zero k, **add k×row** to another row (subtract = negative k)
 - Two **factor drawers**, each holding a kinetic numerator/denominator dial pair: the left drawer is open by default and scales the selected row immediately; lifting a row closes it and opens the right drawer, which controls the lifted copy. Numerators are -20…-1 or 1…20, denominators are 1/1…1/20, so values like 2/3 are directly selectable
+- A run of scaling changes on the same row is scored as **one move**, with a single undo step for the whole run
 - Levels grow from **2×3** to **4×6**, then endless 4×6 boards with deeper scrambles
 - Every level is generated backward from a random RREF, so it is **always solvable**
 - Win detection via exact RREF check, plus an "Echelon form ✓" progress badge
@@ -91,7 +92,7 @@ src/
     matrix.ts         matrix operations, isREF/isRREF, RREF solver
     generator.ts      level sizing, PRNG, solvable level generation
   game/
-    state.ts          game state: moves, undo, numerator/denominator k, win detection
+    state.ts          game state: moves, undo, drawer factors, win detection
     hint.ts           exact next-step hint engine
   ui/
     components/
