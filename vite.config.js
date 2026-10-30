@@ -16,6 +16,9 @@ export default defineConfig({
 		},
 	},
 	base: './', // Use relative paths in index.html, makes our app relocatable.
+	test: {
+		exclude: [ 'e2e/**', '**/node_modules/**', '**/dist/**' ],
+	},
 	define: {
 		// eslint-disable-next-line no-undef
 		__VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
