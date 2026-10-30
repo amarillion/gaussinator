@@ -82,11 +82,6 @@ export class GameApp extends HTMLElement {
 	}
 
 	private bindButtons(): void {
-		this.bind("btn-lift", () => {
-			if (this.game.liftRow()) sfx.lift();
-			else sfx.invalid();
-			this.afterAction();
-		});
 		this.bind("btn-undo", () => {
 			if (this.game.undo()) sfx.move();
 			else sfx.invalid();

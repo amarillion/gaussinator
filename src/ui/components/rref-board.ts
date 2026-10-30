@@ -94,7 +94,7 @@ export class RrefBoard extends HTMLElement {
 		// the remaining width evenly.
 		const dialW = FACTOR_DIAL_WIDTH + 10;
 		const widthBudget = Math.max(96, (containerW - dialW - 8) / 2);
-		const maxH = Math.max(240, window.innerHeight - 330);
+		const maxH = Math.max(220, window.innerHeight - 260);
 		let tw = Math.max(30, Math.min(widthBudget / m, maxH / n, 108));
 		this.gap = Math.max(4, Math.round(tw * 0.12));
 		if (m * tw + (m + 1) * this.gap > widthBudget) {

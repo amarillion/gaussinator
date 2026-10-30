@@ -29,6 +29,18 @@ async function dragHandle(page: Page, rowId: number, distanceY: number): Promise
 }
 
 test.describe("row drag handles", () => {
+	test("keeps only Undo, Hint, and Restart in the toolbar", async ({ page }) => {
+		await openGame(page);
+		await expect(page.locator("#toolbar button")).toHaveCount(3);
+		await expect(page.locator("#btn-undo")).toBeVisible();
+		await expect(page.locator("#btn-hint")).toBeVisible();
+		await expect(page.locator("#btn-restart")).toBeVisible();
+		await expect(page.locator("#btn-lift")).toHaveCount(0);
+		await expect(page.locator("#btn-swap-up")).toHaveCount(0);
+		await expect(page.locator("#btn-swap-down")).toHaveCount(0);
+		await expect(page.locator("#help-line")).toHaveCount(0);
+	});
+
 	test("sits to the right of each row and hides while a row is lifted", async ({ page }) => {
 		await openGame(page);
 

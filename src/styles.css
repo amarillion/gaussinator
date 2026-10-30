@@ -408,12 +408,8 @@ number-dial:focus-visible {
   opacity: 0.9;
 }
 
-#toolbar .op { background: var(--accent); }
-#toolbar .nav { background: #8f7a66; }
 #toolbar .util { background: #a89f92; }
 #toolbar button:active { transform: scale(0.96); }
-
-#help-line { font-size: 12px; color: #a89f92; text-align: center; }
 
 .overlay {
   position: fixed;
