@@ -233,10 +233,7 @@ test.describe("factor drawers", () => {
 
 		await page.mouse.move(x, y);
 		await page.mouse.down();
-		for (let i = 1; i <= 4; i++) {
-			await page.mouse.move(x, y - i * 40);
-			await page.waitForTimeout(8);
-		}
+		await page.mouse.move(x, y - 160, { steps: 5 });
 		await page.mouse.up();
 
 		const atRelease = Number(await num.getAttribute("data-value"));
