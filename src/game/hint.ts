@@ -59,7 +59,7 @@ export function getHint(matrix: Matrix): Hint {
 				rows: [ p ],
 				col: c,
 				factor: f,
-				text: `Scale row ${p + 1} by ${f.toString()}: press M, choose the factor on the left rail (PgUp/PgDn, − for negative), then Enter to make the pivot in column ${c + 1} equal to 1.`,
+				text: `Scale row ${p + 1} by ${f.toString()}: press M, set it on the numerator/denominator dials (PgUp/PgDn, Shift+PgUp/PgDn, − for sign), then Enter to make the pivot in column ${c + 1} equal to 1.`,
 			};
 		}
 
@@ -74,7 +74,7 @@ export function getHint(matrix: Matrix): Hint {
 					rows: [ p, r ],
 					col: c,
 					factor: f,
-					text: `Lift row ${p + 1} with →, choose the factor ${f.toString()} on the left rail (PgUp/PgDn, − for negative), align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
+					text: `Lift row ${p + 1} with →, set the factor ${f.toString()} on the numerator/denominator dials (PgUp/PgDn, Shift+PgUp/PgDn, − for sign), align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
 				};
 			}
 		}
@@ -88,7 +88,7 @@ export function getHint(matrix: Matrix): Hint {
 					rows: [ p, r ],
 					col: c,
 					factor: f,
-					text: `Lift row ${p + 1} with →, choose the factor ${f.toString()} on the left rail (PgUp/PgDn, − for negative), align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
+					text: `Lift row ${p + 1} with →, set the factor ${f.toString()} on the numerator/denominator dials (PgUp/PgDn, Shift+PgUp/PgDn, − for sign), align with row ${r + 1}, then press Enter to clear column ${c + 1}.`,
 				};
 			}
 		}

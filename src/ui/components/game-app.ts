@@ -139,12 +139,8 @@ export class GameApp extends HTMLElement {
 	private wireEvents(): void {
 		this.dial?.addEventListener("factor-change", e => {
 			if (this.game.won) return;
-			this.game.setKIndex((e as CustomEvent<{ index: number }>).detail.index);
-			this.afterAction();
-		});
-		this.dial?.addEventListener("factor-sign", () => {
-			if (this.game.won) return;
-			this.game.toggleKSign();
+			const { numerator, denominator } = (e as CustomEvent<{ numerator: number, denominator: number }>).detail;
+			this.game.setK(numerator, denominator);
 			this.afterAction();
 		});
 
@@ -267,7 +263,7 @@ export class GameApp extends HTMLElement {
 			hintRows: this.hintRows,
 		});
 		this.board.toggleAttribute("disabled", this.game.won);
-		this.dial?.setSelection(this.game.kIndex, this.game.kNegative);
+		this.dial?.setSelection(this.game.kNumerator, this.game.kDenominator);
 		this.dial?.toggleAttribute("disabled", this.game.won);
 		this.stats.update(this.game);
 		this.hud.update(this.game);
@@ -340,16 +336,18 @@ export class GameApp extends HTMLElement {
 		if (key === " ") e.preventDefault();
 		if (key === "Backspace" || key === "/") e.preventDefault();
 
-		// Multiplier rail selection
+		// Factor dial selection: PgUp/PgDn = numerator, Shift+PgUp/PgDn = denominator.
 		if (key === "PageUp") {
-			game.moveK(-1);
+			if (e.shiftKey) game.moveDenominator(-1);
+			else game.moveNumerator(-1);
 			sfx.select();
 			e.preventDefault();
 			this.afterAction();
 			return;
 		}
 		if (key === "PageDown") {
-			game.moveK(1);
+			if (e.shiftKey) game.moveDenominator(1);
+			else game.moveNumerator(1);
 			sfx.select();
 			e.preventDefault();
 			this.afterAction();

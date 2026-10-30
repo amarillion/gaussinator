@@ -1,21 +1,22 @@
 import { Rational } from "../../math/rational";
 import type { Matrix } from "../../math/matrix";
+import { FACTOR_DIAL_WIDTH } from "./dial-tuning";
 
 export interface LiftView {
-	sourceId: number;
-	sourcePos: number;
-	targetPos: number;
-	factor: Rational;
+	sourceId: number,
+	sourcePos: number,
+	targetPos: number,
+	factor: Rational,
 }
 
 /** Everything `<rref-board>` needs to draw one frame. */
 export interface BoardView {
-	rows: Matrix;
-	order: number[];
-	cursorPos: number;
-	lift: LiftView | null;
-	pendingScale: boolean;
-	hintRows: number[] | null;
+	rows: Matrix,
+	order: number[],
+	cursorPos: number,
+	lift: LiftView | null,
+	pendingScale: boolean,
+	hintRows: number[] | null,
 }
 
 function tierOf(r: Rational): number {
@@ -79,7 +80,8 @@ export class RrefBoard extends HTMLElement {
 		// screen without horizontal overflow.
 		const wrap = this.parentElement?.parentElement as HTMLElement | null;
 		const containerW = wrap ? wrap.clientWidth : window.innerWidth;
-		const dialW = 44 + 10; // factor dial width + board-row gap
+		const dial = this.parentElement?.querySelector<HTMLElement>("factor-dial");
+		const dialW = (dial?.offsetWidth || FACTOR_DIAL_WIDTH) + 10; // dial pair + board-row gap
 		const widthBudget = Math.max(96, containerW / 2 - dialW);
 		const maxH = Math.max(240, window.innerHeight - 330);
 		let tw = Math.max(30, Math.min(widthBudget / m, maxH / n, 108));

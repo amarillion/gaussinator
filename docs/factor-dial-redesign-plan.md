@@ -28,10 +28,10 @@ scrollable number dials:
   `kNumerator` / `kDenominator`, keep clamping and lift syncing exact, and
   update/extend Vitest coverage. (Temporary compatibility aliases keep the old
   rail compiling until step 3.)
-- [ ] **3. Number dial component** — build the reusable scrolling scale with
+- [x] **3. Number dial component** — build the reusable scrolling scale with
   drag, momentum, rubber-band edges, snapping, keyboard support, and the
   centralized tuning constants.
-- [ ] **4. Factor dial pair + styling** — compose two number dials side by side,
+- [x] **4. Factor dial pair + styling** — compose two number dials side by side,
   report a combined `factor-change`, add needle/inset-shadow styling, and
   adjust the board width budget for the wider control.
 - [ ] **5. App wiring, keyboard, and copy** — wire the new event/model into

@@ -3,12 +3,10 @@ import { Rational } from "../math/rational";
 import { Matrix } from "../math/matrix";
 import {
 	Game,
-	K_CENTER_INDEX,
 	K_DENOMINATOR_MAX,
 	K_DENOMINATOR_MIN,
 	K_NUMERATOR_MAX,
 	K_NUMERATOR_MIN,
-	K_TILES,
 	computeStars,
 } from "./state";
 
@@ -21,16 +19,6 @@ describe("computeStars", () => {
 		expect(computeStars(5, 8)).toBe(3);
 		expect(computeStars(10, 8)).toBe(2);
 		expect(computeStars(20, 8)).toBe(1);
-	});
-});
-
-describe("K rail", () => {
-	it("has 1 at the center, integers above, unit fractions below", () => {
-		expect(K_TILES[K_CENTER_INDEX].toString()).toBe("1");
-		expect(K_TILES[K_CENTER_INDEX - 1].toString()).toBe("2");
-		expect(K_TILES[0].toString()).toBe("9");
-		expect(K_TILES[K_CENTER_INDEX + 1].toString()).toBe("1/2");
-		expect(K_TILES[K_TILES.length - 1].toString()).toBe("1/9");
 	});
 });
 
@@ -91,22 +79,9 @@ describe("numerator / denominator factor", () => {
 });
 
 describe("Game", () => {
-	it("moves along the multiplier rail", () => {
-		const g = new Game(0, 1);
-		expect(g.k.toString()).toBe("1");
-		g.moveK(-1);
-		expect(g.k.toString()).toBe("2");
-		g.moveK(-1);
-		expect(g.k.toString()).toBe("3");
-		g.moveK(1);
-		expect(g.k.toString()).toBe("2");
-		g.setKIndex(0);
-		expect(g.k.toString()).toBe("9");
-	});
-
 	it("toggles negative factors with the minus key", () => {
 		const g = new Game(0, 1);
-		g.moveK(-1);
+		g.setK(2, 1);
 		expect(g.k.toString()).toBe("2");
 		g.toggleKSign();
 		expect(g.k.toString()).toBe("-2");
@@ -121,7 +96,7 @@ describe("Game", () => {
 		g.cursorPos = 0;
 		expect(g.applyScale()).toBe(false);
 		expect(g.startScaleMode()).toBe(true);
-		g.moveK(-1); // factor 2
+		g.setK(2, 1);
 		expect(g.applyScale()).toBe(true);
 		expect(g.rows[0].map(x => x.toString())).toEqual([ "4", "8" ]);
 		expect(g.moves).toBe(1);
@@ -154,9 +129,9 @@ describe("Game", () => {
 		expect(g.lift?.sourceId).toBe(0);
 		expect(g.lift?.sourcePos).toBe(0);
 		expect(g.lift?.factor.toString()).toBe("1");
-		g.moveK(-1);
+		g.setK(2, 1);
 		expect(g.lift?.factor.toString()).toBe("2");
-		g.moveK(-1);
+		g.setK(3, 1);
 		expect(g.lift?.factor.toString()).toBe("3"); // absolute, not 2*3
 		g.toggleKSign();
 		expect(g.lift?.factor.toString()).toBe("-3");
@@ -168,7 +143,7 @@ describe("Game", () => {
 		g.order = [ 0, 1 ];
 		g.cursorPos = 0;
 		g.liftRow();
-		g.moveK(-1); // factor 2
+		g.setK(2, 1);
 		g.toggleKSign(); // -2
 		g.setLiftTarget(1);
 		expect(g.applyLift()).toBe(true);
@@ -202,7 +177,7 @@ describe("Game", () => {
 		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
 		g.order = [ 0, 1 ];
 		g.startScaleMode();
-		g.moveK(-1); // 2
+		g.setK(2, 1);
 		g.applyScale();
 		g.cursorPos = 0;
 		g.liftRow();
@@ -228,7 +203,7 @@ describe("Game", () => {
 		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
 		g.order = [ 0, 1 ];
 		g.startScaleMode();
-		g.moveK(-1); // 2
+		g.setK(2, 1);
 		g.applyScale();
 		expect(g.undo()).toBe(true);
 		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
@@ -253,7 +228,7 @@ describe("Game", () => {
 		g.rows = M([ [ 2, 0 ], [ 0, 1 ] ]);
 		g.order = [ 0, 1 ];
 		g.startScaleMode();
-		g.setKIndex(K_CENTER_INDEX + 1); // 1/2
+		g.setK(1, 2);
 		expect(g.k.toString()).toBe("1/2");
 		let recorded: number | null = null;
 		g.onBest = m => {

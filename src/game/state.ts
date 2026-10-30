@@ -33,32 +33,6 @@ export const K_DENOMINATOR_MAX = 20;
 export const K_DEFAULT_NUMERATOR = 1;
 export const K_DEFAULT_DENOMINATOR = 1;
 
-/*
- * Temporary compatibility aliases for the old single-rail UI. Remove once the
- * two-dial component lands.
- */
-export const K_TILES: readonly Rational[] = [
-	new Rational(9),
-	new Rational(8),
-	new Rational(7),
-	new Rational(6),
-	new Rational(5),
-	new Rational(4),
-	new Rational(3),
-	new Rational(2),
-	Rational.ONE,
-	new Rational(1, 2),
-	new Rational(1, 3),
-	new Rational(1, 4),
-	new Rational(1, 5),
-	new Rational(1, 6),
-	new Rational(1, 7),
-	new Rational(1, 8),
-	new Rational(1, 9),
-];
-
-export const K_CENTER_INDEX = 8;
-
 export function computeStars(moves: number, par: number): number {
 	if (moves <= par) return 3;
 	if (moves <= par + Math.ceil(par / 2)) return 2;
@@ -123,18 +97,6 @@ export class Game {
 		return new Rational(BigInt(this.kNumerator), BigInt(this.kDenominator));
 	}
 
-	/** Temporary compatibility view for the old single rail UI. */
-	get kIndex(): number {
-		const k = this.k;
-		const index = K_TILES.findIndex(r => r.equals(k));
-		return index >= 0 ? index : K_CENTER_INDEX;
-	}
-
-	/** Temporary compatibility view for the old single rail UI. */
-	get kNegative(): boolean {
-		return this.kNumerator < 0;
-	}
-
 	displayMatrix(): Matrix {
 		return this.order.map(id => this.rows[id].map(x => x));
 	}
@@ -164,19 +126,6 @@ export class Game {
 	moveDenominator(delta: number): void {
 		if (this.won) return;
 		this.setK(this.kNumerator, this.kDenominator + delta);
-	}
-
-	/** Temporary compatibility wrapper for the old single rail UI. */
-	moveK(delta: number): void {
-		if (this.won) return;
-		this.setKIndex(this.kIndex + delta);
-	}
-
-	/** Temporary compatibility wrapper for the old single rail UI. */
-	setKIndex(index: number): void {
-		if (this.won) return;
-		const r = K_TILES[clamp(Math.round(index), 0, K_TILES.length - 1)];
-		this.setK(Number(r.n), Number(r.d));
 	}
 
 	/** Minus key: toggle the sign of the current factor. */
