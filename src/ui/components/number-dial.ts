@@ -212,6 +212,7 @@ export class NumberDial extends HTMLElement {
 			const eased = 1 - Math.pow(1 - t, 3);
 			this.offset = from + distance * eased;
 			this.renderTrack();
+			if (userDriven) this.syncSelection();
 			if (t < 1) {
 				this.raf = requestAnimationFrame(step);
 				return;
