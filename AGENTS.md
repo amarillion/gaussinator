@@ -14,37 +14,47 @@ full design.
 ## Commands
 
 ```bash
-npm install        # install dev dependencies
-npm run dev        # start Vite dev server
-npm test           # run Vitest once
-npm run build      # tsc type-check + production build (run before finishing)
-npm run preview    # serve dist/ locally
+npm install          # install dev dependencies
+npm run dev          # start Vite dev server
+npm test             # run Vitest once
+npm run test:e2e     # run Playwright Chromium e2e tests
+npm run build        # tsc type-check + production build (run before finishing)
+npm run preview      # serve dist/ locally
+npm run test:e2e:install # install Playwright's Chromium once
 ```
 
 If `npm run dev`/`build` fails with a missing esbuild binary after install,
 run `npm approve-scripts esbuild` and retry.
 
 Always run **`npm test` and `npm run build`** after any change and make sure
-both pass before reporting completion.
+both pass before reporting completion. For UI/dial changes also run
+**`npm run test:e2e`** (Chromium must be installed).
 
 ## Architecture map
 
 ```
-src/main.ts             bootstrap, wiring, localStorage, resize handling
+src/main.ts             bootstrap, custom element registration
 src/audio.ts            WebAudio sfx (lazy AudioContext, no assets)
-src/styles.css          all styling; element ids are referenced from TS
+src/styles.css          all styling; dial/board/overlay layout
 src/math/rational.ts    Rational: BigInt num/den, reduced, den > 0, 0/1 for zero
 src/math/matrix.ts      Matrix = Rational[][]; swapRows/scaleRow/addMultiple;
                         isREF/isRREF; computeRREF (returns matrix + ops)
 src/math/generator.ts   levelSpec (sizes+depth), mulberry32 PRNG, generateLevel
-src/game/state.ts       Game class: rows, order, cursorPos, kString, combine,
-                        history/undo, moves, par, best, win detection
+src/game/state.ts       Game class: rows, order, cursorPos, kNumerator/kDenominator,
+                        combine, history/undo, moves, par, best, win detection
 src/game/hint.ts        getHint: exact next-step suggestion {kind, rows, col, factor}
-src/ui/render.ts        Renderer: tiles keyed by rowId, position from order,
-                        fraction HTML, stats, badges, win overlay
-src/ui/input.ts         keyboard, toolbar buttons, board pointer/swipe
-src/ui/tutorial.ts      first-run overlay show/hide
-index.html              static shell — every id used by render/input lives here
+src/ui/components/game-app.ts  root controller, keyboard, localStorage, resize
+src/ui/components/rref-board.ts matrix board + lift rail custom element
+src/ui/components/factor-dial.ts numerator + denominator dial pair
+src/ui/components/number-dial.ts kinetic scrolling scale
+src/ui/components/dial-tuning.ts all dial feel/size constants
+src/ui/components/game-hud.ts  mode label, badge, hint box
+src/ui/components/game-stats.ts header stat tiles
+src/ui/components/win-overlay.ts level-complete modal
+src/ui/components/tutorial-overlay.ts first-run overlay show/hide
+index.html              static shell — every id used by game-app lives here
+e2e/                    Playwright Chromium interaction tests
+playwright.config.ts    e2e config (starts Vite on port 4173)
 ```
 
 ## Hard invariants (do not break)
@@ -86,7 +96,9 @@ index.html              static shell — every id used by render/input lives her
 - Guard all `localStorage` access with `try/catch` (storage can be blocked).
 - Audio must be lazy (create `AudioContext` on first gesture) and fail
   silently.
-- Touch targets ≥ 44px; keep `touch-action: none` on `#board`.
+- Touch targets ≥ 44px; keep `touch-action: none` on `#board` and `number-dial`.
+- Keep every dial feel/size constant in `src/ui/components/dial-tuning.ts`;
+  the dial component should read them rather than hard-code magic numbers.
 - Keyboard handlers must `preventDefault()` on `Arrow*`, `Space`, `Backspace`,
   and `/` to stop page scroll/navigation.
 - Randomness in generation uses the seeded `mulberry32` PRNG so tests are
@@ -102,6 +114,8 @@ index.html              static shell — every id used by render/input lives her
   i.e. `computeRREF(op(matrix)).matrix === computeRREF(matrix).matrix`.
 - `hint.test.ts` includes an auto-solver; if you change the hint engine, add
   or extend a convergence test over generated levels.
+- UI gesture/dial changes need a Playwright case in `e2e/`; run
+  `npm run test:e2e` before finishing.
 
 ## Adding a feature (typical path)
 
@@ -110,12 +124,14 @@ For a new row operation or UI action:
 1. Math/state first: add the operation to `matrix.ts` (with validation) and a
    `Game` method that snapshots history, mutates, calls `finishMove()`, and
    returns success/failure.
-2. Wire input: keyboard key + toolbar button + (if relevant) board touch in
-   `input.ts`, using `sfx` and `ctx.afterAction()`.
+2. Wire input: keyboard key + toolbar button + (if relevant) board/dial touch
+   in `game-app.ts` or the owning custom element, using `sfx` and
+   `afterAction()`.
 3. Update `index.html`/`styles.css` if new elements are needed, keeping ids
    consistent.
 4. Update tutorial copy and `README.md`/`docs/design.md` if player-visible.
-5. Add unit tests; run `npm test` and `npm run build`.
+5. Add unit tests and, for UI interactions, Playwright tests; run `npm test`,
+   `npm run test:e2e`, and `npm run build`.
 
 ## Common pitfalls
 
@@ -137,6 +153,7 @@ For a new row operation or UI action:
 ## Definition of done
 
 - `npm test` passes (all suites).
+- `npm run test:e2e` passes for UI/dial changes.
 - `npm run build` passes (`tsc` + `vite build`).
 - Manual check: keyboard playthrough of level 1 works; board responds to
   tap/select and row swipe; undo/hint/restart behave; win overlay advances to

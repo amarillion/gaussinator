@@ -41,7 +41,7 @@ scrollable number dials:
 - [x] **6. Playwright** — add `@playwright/test`, Chromium config, and e2e tests
   for rendering, fraction selection, negative numerators, snapping, momentum,
   and a real scale operation.
-- [ ] **7. Validation + docs** — update README/design docs, run
+- [x] **7. Validation + docs** — update README/design docs, run
   `npm test`, `npm run build`, and `npm run test:e2e`.
 
 ## Tuning parameters (single source of truth)
@@ -70,3 +70,11 @@ Defined in `src/ui/components/dial-tuning.ts`:
 - Selecting `2` / `3` makes the game factor exactly `2/3`.
 - The old `±` button and old rail DOM are gone.
 - `npm test`, `npm run build`, and `npm run test:e2e` pass.
+
+## Result
+
+All steps are implemented. `npm run lint`, `npm test` (42 tests), and
+`npm run build` pass; `npm run test:e2e` passes all 6 Chromium cases. The
+Playwright suite exercises dial rendering, exact `2/3` selection, negative
+numerators, range endpoints, slow-drag snapping, flick momentum, and a narrow
+mobile viewport.

@@ -38,13 +38,16 @@ Legal moves (all are elementary row operations):
 | Move | Math | In-game action |
 | --- | --- | --- |
 | Swap rows | `R_i ↔ R_j` | Move a row up/down; swiping a row on touch |
-| Scale row | `R_i ← k·R_i`, `k ≠ 0` | Pick `k` on the left multiplier rail, press `M`, then `Enter` (`Esc` cancels) |
-| Combine | `R_j ← R_j + k·R_i`, `i ≠ j`, `k ≠ 0` | Lift row `i` with `→`, pick `k` on the rail (the lifted copy updates live, always relative to the original row), align with row `j` (`↑`/`↓`), press `Enter` |
+| Scale row | `R_i ← k·R_i`, `k ≠ 0` | Pick the numerator and denominator on the two scrolling dials, press `M`, then `Enter` (`Esc` cancels) |
+| Combine | `R_j ← R_j + k·R_i`, `i ≠ j`, `k ≠ 0` | Lift row `i` with `→`, pick the numerator/denominator on the dials (the lifted copy updates live, always relative to the original row), align with row `j` (`↑`/`↓`), press `Enter` |
 
-The multiplier rail has `1` at the center, integers `2…9` above it, and unit
-fractions `1/2…1/9` below it. `PgUp`/`PgDn` move the selection; `-` toggles a
-negative factor. Subtracting one row from another is the combine operation with
-negative `k`.
+The factor is `numerator / denominator`. The left dial scrolls through
+`-20…20`; the right dial scrolls through denominators `1…20` shown as
+`1/1…1/20`. A centered needle marks the selected value, and the scale snaps to
+the nearest entry when a drag or flick slows below the tuned threshold.
+`PgUp`/`PgDn` move the numerator, `Shift+PgUp`/`Shift+PgDn` move the
+denominator, and `-` flips the numerator's sign. Subtracting one row from
+another is the combine operation with negative `k`.
 
 A level is **won** when the matrix is in RREF:
 
@@ -153,8 +156,9 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 | --- | --- |
 | `↑` `↓` (or `K` `J`) | Move the row cursor |
 | `Shift+↑` / `Shift+↓` | Swap cursor row with neighbor |
-| `PgUp` / `PgDn` | Move the multiplier-rail selection |
-| `-` | Toggle a negative factor |
+| `PgUp` / `PgDn` | Change the numerator on the left dial |
+| `Shift+PgUp` / `Shift+PgDn` | Change the denominator on the right dial |
+| `-` | Flip the numerator's sign |
 | `M` or `*` | Start in-place scaling of the cursor row; `Enter` applies, `Esc` cancels |
 | `→` | Lift a copy of the cursor row to the right side of the board |
 | `↑` `↓` while lifted | Align the lifted copy with a target row |
@@ -173,8 +177,10 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 - Swipe up/down to swap rows with a neighbor (the 2048 gesture).
 - Swipe right to shift (lift) a row; swipe left on the original row to cancel
   the shift or on another row to apply it.
-- Drag up/down on the left multiplier dial to scrub the factor (tap a tile to
-  jump to it, `±` for negative); the toolbar `×k` button starts/applies
+- Drag or flick the left dial to choose the numerator (`-20…20`) and the right
+  dial to choose the denominator (`1…20`). The scale moves under a fixed center
+  needle, carries momentum after a flick, eases to the nearest value, and can
+  be tapped to jump to a visible number. The toolbar `×k` button starts/applies
   in-place scaling.
 - While a row is lifted, tap the target row to apply the lifted copy.
 
@@ -185,12 +191,13 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 - `rows`: matrix indexed by a **stable row id**,
 - `order`: display position → row id,
 - `cursorPos`: selected display position,
-- `kIndex`: selected tile of the multiplier rail (`0` = 9, `8` = 1, `16` = 1/9),
-- `kNegative`: whether the minus key toggled the factor negative,
+- `kNumerator`: selected numerator in `[-20, 20]`,
+- `kDenominator`: selected denominator in `[1, 20]`; the exact factor is
+  `new Rational(kNumerator, kDenominator)`,
 - `pendingScale`: in-place scaling mode started with `M`,
 - `lift`: `{ sourceId, sourcePos, targetPos, factor } | null` — a row copy
   currently lifted to the right side of the board. Its `factor` is always kept
-  in sync with the rail, so the lifted copy is always the original row × the
+  in sync with the dials, so the lifted copy is always the original row × the
   selected factor.
 
 Stable row ids + `order` are what make row-swap animations possible: a tile is
@@ -212,18 +219,22 @@ src/
     matrix.ts         Matrix ops, isREF/isRREF, computeRREF
     generator.ts      level spec, PRNG, RREF generation + scramble
   game/
-    state.ts          Game class: moves, undo, k rail, win detection
+    state.ts          Game class: moves, undo, numerator/denominator k, win detection
     hint.ts           next-step hint engine
   ui/
     components/
       game-app.ts     <game-app> root controller component
       rref-board.ts   <rref-board> matrix board + lift rail custom element
-      factor-dial.ts  <factor-dial> multiplier dial custom element
+      factor-dial.ts  <factor-dial> numerator + denominator dial pair
+      number-dial.ts  <number-dial> kinetic scrolling scale
+      dial-tuning.ts  size / momentum / snap constants
       game-hud.ts     <game-hud> mode label, badge, hint box
       game-stats.ts   <game-stats> header stat tiles
       win-overlay.ts  <win-overlay> level-complete modal
       tutorial-overlay.ts <tutorial-overlay> how-to-play modal
 index.html            static UI shell (all element ids live here)
+e2e/                  Playwright Chromium tests
+playwright.config.ts  starts Vite on port 4173 for the e2e suite
 ```
 
 ### 8.1 Data flow
@@ -251,13 +262,27 @@ index.html            static UI shell (all element ids live here)
 - Fractions render stacked (`num` over `den`) when both parts are ≤ 4 digits,
   otherwise inline `n/d`.
 
-### 8.3 Audio
+### 8.3 Dial physics
+
+`<number-dial>` renders an absolutely positioned value track inside a clipped
+viewport with a fixed center needle. Pointer drags move the track (with
+rubber-band resistance at the ends), release velocity decays exponentially,
+and once the speed falls below the snap threshold the track eases to the
+nearest value. Tapping a visible value animates it to the needle; keyboard
+arrows/PageUp/PageDown/Home/End move by whole steps.
+
+All tunable values — item height, dial width, gap, friction, fling caps, snap
+speed/duration, overscroll, tap slop, and velocity sampling — live in
+`src/ui/components/dial-tuning.ts`, so feel can be adjusted without touching
+the component logic.
+
+### 8.4 Audio
 
 All sounds are generated with WebAudio oscillators on first user gesture
 (`src/audio.ts`); there are no audio assets. The toggle is persisted in
 `localStorage` under `rref.sound`.
 
-### 8.4 Persistence
+### 8.5 Persistence
 
 `localStorage` keys:
 
@@ -278,18 +303,21 @@ Vitest covers (see `*.test.ts`):
   RREF, start is not, `computeRREF(start) == answer`, par > 0, entries bounded.
 - `Hint`: exact suggestions and an **auto-solver** that follows hints to
   completion for every generated level tested.
-- `Game`: multiplier-rail selection, sign toggling, scale mode (start/apply/
-  cancel), lift/swap, invalid-op rejection, undo (including cursor restore),
-  win detection and best-score callback.
+- `Game`: numerator/denominator selection and clamping, sign toggling, scale
+  mode (start/apply/cancel), lift/swap, invalid-op rejection, undo (including
+  cursor restore), win detection and best-score callback.
 
-No DOM/browser tests are in the suite; the UI is verified by `tsc`, the
-production build, and manual play.
+Playwright runs Chromium e2e tests in `e2e/` against a Vite dev server. They
+cover the two-dial rendering, exact `2/3` selection and application, negative
+numerators, endpoint clamping, slow-drag snapping, flick momentum, and a narrow
+mobile viewport (`npm run test:e2e`).
 
 ## 10. Known limitations / future ideas
 
 - No redo stack (undo only).
 - Best scores are per board size, not per scramble seed.
-- No accessibility layer (screen-reader labels, focus management) yet.
+- The dials expose basic slider ARIA labels/values; broader focus management
+  and screen-reader narration across the board are still future work.
 - Possible additions: move-by-move lesson mode, REF-only practice mode,
   deterministic daily challenges (seeded by date), keyboard remapping,
   locale/localization support.

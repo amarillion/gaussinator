@@ -11,7 +11,7 @@ decimals).
 
 - Exact `BigInt` rational math — fractions like `-3/4` are shown and combined exactly
 - Three legal row operations: **swap** rows, **scale** a row by a non-zero k, **add k×row** to another row (subtract = negative k)
-- A left-side **multiplier rail** picks k: 1 in the center, integers 2…9 above, unit fractions 1/2…1/9 below; `PgUp`/`PgDn` move, `-` toggles negative
+- Two side-by-side **scrolling factor dials** pick an exact k = numerator / denominator: the left dial spans -20…20 and the right dial spans 1/1…1/20, so values like 2/3 are directly selectable; flick to scrub, tap a visible value to jump, and the scale snaps under the center needle
 - Levels grow from **2×3** to **4×6**, then endless 4×6 boards with deeper scrambles
 - Every level is generated backward from a random RREF, so it is **always solvable**
 - Win detection via exact RREF check, plus an "Echelon form ✓" progress badge
@@ -33,6 +33,7 @@ Other scripts:
 
 ```bash
 npm test        # run the Vitest suite once
+npm run test:e2e # run the Playwright Chromium e2e suite
 npm run build   # type-check (tsc) + production build into dist/
 npm run preview # serve the production build locally
 ```
@@ -41,6 +42,10 @@ npm run preview # serve the production build locally
 > script awaiting approval. If `npm run dev`/`build` fails with a missing
 > esbuild binary, run `npm approve-scripts esbuild` (or the suggested command)
 > and retry. In most environments the bundled binary already works.
+>
+> Playwright needs its Chromium build once: `npm run test:e2e:install`
+> (and on Linux, `npx playwright install-deps chromium` if system libraries
+> are missing).
 
 ## How to play
 
@@ -54,8 +59,9 @@ at the bottom.
 | --- | --- |
 | `↑` `↓` (or `K` `J`) | Select row |
 | `Shift+↑` / `Shift+↓` | Move (swap) the selected row |
-| `PgUp` / `PgDn` | Move the multiplier-rail selection |
-| `-` | Toggle a negative factor |
+| `PgUp` / `PgDn` | Change the numerator on the left dial |
+| `Shift+PgUp` / `Shift+PgDn` | Change the denominator on the right dial |
+| `-` | Flip the numerator's sign |
 | `M` | Start in-place scaling of the selected row; `Enter` applies, `Esc` cancels |
 | `→` | Lift a copy of the selected row to the right side (the copy always shows the original row × the selected factor) |
 | `↑` `↓` while lifted | Align the lifted copy with a target row |
@@ -71,7 +77,7 @@ at the bottom.
 - **Tap** a row to select it
 - **Swipe** up/down to swap rows with a neighbor
 - **Swipe right** to shift (lift) a row; **swipe left** on the original row to cancel the shift or on another row to apply it
-- **Drag** up/down on the left multiplier dial to scrub the factor (tap a tile to jump to it, `±` for negative); the toolbar `×k` button starts/applies in-place scaling
+- **Drag or flick** the left dial to choose the numerator (-20…20) and the right dial to choose the denominator (1…20); the needle marks the selected value, the scale snaps when released, and tapping a visible number jumps to it. The toolbar `×k` button starts/applies in-place scaling
 - While a row is lifted, tap the target row to apply the lifted copy
 
 ## Project structure
@@ -86,13 +92,15 @@ src/
     matrix.ts         matrix operations, isREF/isRREF, RREF solver
     generator.ts      level sizing, PRNG, solvable level generation
   game/
-    state.ts          game state: moves, undo, k rail, win detection
+    state.ts          game state: moves, undo, numerator/denominator k, win detection
     hint.ts           exact next-step hint engine
   ui/
     components/
       game-app.ts     <game-app> root controller component
       rref-board.ts   <rref-board> matrix board + lift rail custom element
-      factor-dial.ts  <factor-dial> multiplier dial custom element
+      factor-dial.ts  <factor-dial> numerator + denominator dial pair
+      number-dial.ts  <number-dial> kinetic scrolling scale
+      dial-tuning.ts  all dial size / momentum / snap constants
       game-hud.ts     <game-hud> mode label, badge, hint box
       game-stats.ts   <game-stats> header stat tiles
       win-overlay.ts  <win-overlay> level-complete modal
@@ -101,6 +109,8 @@ origData/
   icon.svg            source logo (3x3 matrix, lifted middle row)
   makefile            rasterizes the PWA icons into public/ (run `make`)
 docs/design.md        full design document
+e2e/                  Playwright Chromium tests for the dial interaction
+playwright.config.ts  Playwright config (starts Vite on port 4173)
 ```
 
 See `docs/design.md` for the architecture, math model, level generation
@@ -121,7 +131,7 @@ Workflow:
 1. Fork and create a branch.
 2. Make changes; keep TypeScript strict-clean (`npm run build` runs `tsc`).
 3. Add or update Vitest tests for any math/game-logic change. Use the deterministic `mulberry32` PRNG for reproducible level tests.
-4. Run `npm test` and `npm run build` before opening a PR.
+4. Run `npm test`, `npm run test:e2e`, and `npm run build` before opening a PR.
 5. For UI changes, manually verify both keyboard play and a mobile-sized viewport.
 
 Guidelines:
