@@ -13,7 +13,7 @@ function range(min: number, max: number): number[] {
 	return Array.from({ length: max - min + 1 }, (_, i) => min + i);
 }
 
-const NUMERATOR_VALUES = range(K_NUMERATOR_MIN, K_NUMERATOR_MAX);
+const NUMERATOR_VALUES = range(K_NUMERATOR_MIN, K_NUMERATOR_MAX).filter(value => value !== 0);
 const DENOMINATOR_VALUES = range(K_DENOMINATOR_MIN, K_DENOMINATOR_MAX);
 
 /**

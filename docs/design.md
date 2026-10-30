@@ -42,7 +42,7 @@ Legal moves (all are elementary row operations):
 | Combine | `R_j ← R_j + k·R_i`, `i ≠ j`, `k ≠ 0` | Lift row `i` with `→`, pick the numerator/denominator on the dials (the lifted copy updates live, always relative to the original row), align with row `j` (`↑`/`↓`), press `Enter` |
 
 The factor is `numerator / denominator`. The left dial scrolls through
-`-20…20`; the right dial scrolls through denominators `1…20` shown as
+`-20…-1` and `1…20`; the right dial scrolls through denominators `1…20` shown as
 `1/1…1/20`. A centered needle marks the selected value, and the scale snaps to
 the nearest entry when a drag or flick slows below the tuned threshold.
 `PgUp`/`PgDn` move the numerator, `Shift+PgUp`/`Shift+PgDn` move the
@@ -177,7 +177,7 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 - Swipe up/down to swap rows with a neighbor (the 2048 gesture).
 - Swipe right to shift (lift) a row; swipe left on the original row to cancel
   the shift or on another row to apply it.
-- Drag or flick the left dial to choose the numerator (`-20…20`) and the right
+- Drag or flick the left dial to choose the numerator (`-20…-1` or `1…20`) and the right
   dial to choose the denominator (`1…20`). The scale moves under a fixed center
   needle, carries momentum after a flick, eases to the nearest value, and can
   be tapped to jump to a visible number. The toolbar `×k` button starts/applies
@@ -191,7 +191,7 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 - `rows`: matrix indexed by a **stable row id**,
 - `order`: display position → row id,
 - `cursorPos`: selected display position,
-- `kNumerator`: selected numerator in `[-20, 20]`,
+- `kNumerator`: selected non-zero numerator in `[-20, -1] ∪ [1, 20]`,
 - `kDenominator`: selected denominator in `[1, 20]`; the exact factor is
   `new Rational(kNumerator, kDenominator)`,
 - `pendingScale`: in-place scaling mode started with `M`,

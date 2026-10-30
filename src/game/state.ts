@@ -24,7 +24,7 @@ export interface Lift {
 	factor: Rational,
 }
 
-/** Numerator dial range, inclusive. Zero is selectable but illegal to apply. */
+/** Numerator dial range, inclusive. Zero is excluded: factors are never zero. */
 export const K_NUMERATOR_MIN = -20;
 export const K_NUMERATOR_MAX = 20;
 /** Denominator dial range, inclusive (shown as 1/1 … 1/20). */
@@ -41,6 +41,13 @@ export function computeStars(moves: number, par: number): number {
 
 function clamp(v: number, lo: number, hi: number): number {
 	return Math.max(lo, Math.min(hi, v));
+}
+
+/** Clamp a numerator while skipping the excluded zero value. */
+function clampNumerator(v: number, direction = 1): number {
+	const clamped = clamp(Math.round(v), K_NUMERATOR_MIN, K_NUMERATOR_MAX);
+	if (clamped !== 0) return clamped;
+	return direction < 0 ? -1 : 1;
 }
 
 /**
@@ -111,15 +118,16 @@ export class Game {
 
 	/** Set both dials, clamping to their legal range. The lift follows at once. */
 	setK(numerator: number, denominator: number): void {
-		this.kNumerator = clamp(Math.round(numerator), K_NUMERATOR_MIN, K_NUMERATOR_MAX);
+		this.kNumerator = clampNumerator(numerator);
 		this.kDenominator = clamp(Math.round(denominator), K_DENOMINATOR_MIN, K_DENOMINATOR_MAX);
 		this.syncLiftFactor();
 	}
 
-	/** PgUp/PgDn: move the numerator by delta. */
+	/** PgUp/PgDn: move the numerator by delta, skipping zero. */
 	moveNumerator(delta: number): void {
 		if (this.won) return;
-		this.setK(this.kNumerator + delta, this.kDenominator);
+		const next = this.kNumerator + delta;
+		this.setK(clampNumerator(next, delta), this.kDenominator);
 	}
 
 	/** Shift+PgUp/Shift+PgDn: move the denominator by delta. */

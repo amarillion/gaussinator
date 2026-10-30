@@ -11,7 +11,7 @@ decimals).
 
 - Exact `BigInt` rational math — fractions like `-3/4` are shown and combined exactly
 - Three legal row operations: **swap** rows, **scale** a row by a non-zero k, **add k×row** to another row (subtract = negative k)
-- Two side-by-side **scrolling factor dials** pick an exact k = numerator / denominator: the left dial spans -20…20 and the right dial spans 1/1…1/20, so values like 2/3 are directly selectable; flick to scrub, tap a visible value to jump, and the scale snaps under the center needle
+- Two side-by-side **scrolling factor dials** pick an exact k = numerator / denominator: the left dial spans -20…-1 and 1…20 and the right dial spans 1/1…1/20, so values like 2/3 are directly selectable; flick to scrub, tap a visible value to jump, and the scale snaps under the center needle
 - Levels grow from **2×3** to **4×6**, then endless 4×6 boards with deeper scrambles
 - Every level is generated backward from a random RREF, so it is **always solvable**
 - Win detection via exact RREF check, plus an "Echelon form ✓" progress badge
@@ -77,7 +77,7 @@ at the bottom.
 - **Tap** a row to select it
 - **Swipe** up/down to swap rows with a neighbor
 - **Swipe right** to shift (lift) a row; **swipe left** on the original row to cancel the shift or on another row to apply it
-- **Drag or flick** the left dial to choose the numerator (-20…20) and the right dial to choose the denominator (1…20); the needle marks the selected value, the scale snaps when released, and tapping a visible number jumps to it. The toolbar `×k` button starts/applies in-place scaling
+- **Drag or flick** the left dial to choose the numerator (-20…-1 or 1…20) and the right dial to choose the denominator (1…20); the needle marks the selected value, the scale snaps when released, and tapping a visible number jumps to it. The toolbar `×k` button starts/applies in-place scaling
 - While a row is lifted, tap the target row to apply the lifted copy
 
 ## Project structure

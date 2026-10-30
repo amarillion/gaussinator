@@ -51,6 +51,7 @@ test.describe("factor dial", () => {
 
 		await expect(numerator(page).locator(".dial-needle")).toHaveCount(1);
 		await expect(denominator(page).locator(".dial-needle")).toHaveCount(1);
+		await expect(numerator(page).locator('.dial-item[data-value="0"]')).toHaveCount(0);
 
 		const numBox = await numerator(page).boundingBox();
 		const denBox = await denominator(page).boundingBox();
