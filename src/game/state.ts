@@ -199,6 +199,7 @@ export class Game {
 	applyScale(): boolean {
 		if (this.won || !this.pendingScale) return false;
 		const k = this.k;
+		if (k.isZero()) return false;
 		this.pushHistory();
 		scaleRow(this.rows, this.order[this.cursorPos], k);
 		this.pendingScale = false;

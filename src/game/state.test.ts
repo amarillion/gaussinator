@@ -76,6 +76,23 @@ describe("numerator / denominator factor", () => {
 		expect(g.applyScale()).toBe(true);
 		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
 	});
+
+	it("rejects scaling and lifting with a zero numerator", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
+		g.order = [ 0, 1 ];
+		g.cursorPos = 0;
+		g.setK(0, 3);
+		g.startScaleMode();
+		expect(g.applyScale()).toBe(false);
+		expect(g.moves).toBe(0);
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
+		g.cancelScaleMode();
+		g.liftRow();
+		g.setLiftTarget(1);
+		expect(g.applyLift()).toBe(false);
+		expect(g.moves).toBe(0);
+	});
 });
 
 describe("Game", () => {

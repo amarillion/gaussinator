@@ -73,7 +73,7 @@ Defined in `src/ui/components/dial-tuning.ts`:
 
 ## Result
 
-All steps are implemented. `npm run lint`, `npm test` (42 tests), and
+All steps are implemented. `npm run lint`, `npm test` (43 tests), and
 `npm run build` pass; `npm run test:e2e` passes all 6 Chromium cases. The
 Playwright suite exercises dial rendering, exact `2/3` selection, negative
 numerators, range endpoints, slow-drag snapping, flick momentum, and a narrow
