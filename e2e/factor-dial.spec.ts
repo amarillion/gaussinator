@@ -25,6 +25,17 @@ async function openGame(page: Page): Promise<void> {
 	await expect(denominator(page)).toHaveAttribute("data-value", "1");
 }
 
+async function swipe(page: Page, target: Locator, dx: number, dy: number): Promise<void> {
+	const box = await target.boundingBox();
+	if (!box) throw new Error("swipe target is not visible");
+	const x = box.x + box.width / 2;
+	const y = box.y + box.height / 2;
+	await page.mouse.move(x, y);
+	await page.mouse.down();
+	await page.mouse.move(x + dx, y + dy, { steps: 5 });
+	await page.mouse.up();
+}
+
 async function dragDial(page: Page, dial: Locator, distanceY: number, pause = 40): Promise<void> {
 	const box = await dial.boundingBox();
 	if (!box) throw new Error("dial is not visible");
@@ -138,6 +149,47 @@ test.describe("factor drawers", () => {
 		await expect(page.locator('[data-stat="moves"]')).toHaveText("1");
 		await expect(left).toHaveAttribute("open", "");
 		await expect(right).not.toHaveAttribute("open");
+	});
+
+	test("moves the lifted row by swiping up and down on the rail", async ({ page }) => {
+		await openGame(page);
+		await page.keyboard.press("ArrowRight");
+		await expect(page.locator("#hud .mode-label")).toContainText("→ row 1");
+		await page.waitForTimeout(250);
+
+		const rail = page.locator(".lift-rail.active");
+		await swipe(page, rail, 0, 60);
+		await expect(page.locator("#hud .mode-label")).toContainText("→ row 2");
+		await expect(drawer(page, "right")).toHaveAttribute("open", "");
+
+		await swipe(page, rail, 0, -60);
+		await expect(page.locator("#hud .mode-label")).toContainText("→ row 1");
+	});
+
+	test("applies the lifted row by swiping left on the rail", async ({ page }) => {
+		await openGame(page);
+		await page.keyboard.press("ArrowRight");
+		await page.waitForTimeout(250);
+
+		const rail = page.locator(".lift-rail.active");
+		await swipe(page, rail, 0, 60);
+		await expect(page.locator("#hud .mode-label")).toContainText("→ row 2");
+
+		await swipe(page, rail, -60, 0);
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("1");
+		await expect(drawer(page, "left")).toHaveAttribute("open", "");
+		await expect(drawer(page, "right")).not.toHaveAttribute("open");
+	});
+
+	test("cancels the lifted row by swiping right on the rail", async ({ page }) => {
+		await openGame(page);
+		await page.keyboard.press("ArrowRight");
+		await page.waitForTimeout(250);
+
+		await swipe(page, page.locator(".lift-rail.active"), 60, 0);
+		await expect(page.locator('[data-stat="moves"]')).toHaveText("0");
+		await expect(drawer(page, "left")).toHaveAttribute("open", "");
+		await expect(drawer(page, "right")).not.toHaveAttribute("open");
 	});
 
 	test("reaches negative numerators and denominator endpoints without a sign button", async ({ page }) => {

@@ -190,7 +190,12 @@ involved so the UI can highlight them (and tests can auto-apply hints).
   visible number.
 - Lifting a row closes the left drawer and opens the right one. Its dials set
   the lifted copy's factor and update the preview immediately.
-- While a row is lifted, tap the target row to apply the lifted copy.
+- While a row is lifted, tap the target row to apply the lifted copy, or
+  swipe the lifted rail itself: up/down aligns it, left applies it to the
+  aligned row (or returns it while aligned with its source), and right
+  returns it. The rail is a child of `<rref-board>` and only becomes
+  pointer-active while a lift exists, so both surfaces share one gesture
+  handler instead of duplicating it at a higher DOM level.
 
 ### 7.3 State model behind the cursor
 

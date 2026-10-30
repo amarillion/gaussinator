@@ -78,7 +78,7 @@ at the bottom.
 - **Swipe** up/down to swap rows with a neighbor
 - **Swipe right** to shift (lift) a row; **swipe left** on the original row to cancel the shift or on another row to apply it
 - **Drag or flick** the left drawer's dials to scale the selected row immediately; after lifting a row, the right drawer opens and its dials set the lifted copy's factor. Needles mark the selected values, scales snap when released, and tapping a visible number jumps to it
-- While a row is lifted, tap the target row to apply the lifted copy
+- While a row is lifted, tap the target row to apply the lifted copy. You can also swipe the lifted rail itself: up/down to align it, left to apply, right to return it
 
 ## Project structure
 
