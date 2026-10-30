@@ -23,14 +23,14 @@
 
     <div id="board-wrap">
       <div id="board-row">
-        <factor-dial id="factor-dial" aria-label="Factor numerator and denominator"></factor-dial>
+        <factor-dial id="scale-dial" class="drawer drawer-left" open aria-label="Selected row factor"></factor-dial>
         <rref-board id="board" aria-label="Matrix board"></rref-board>
+        <factor-dial id="lift-dial" class="drawer drawer-right" aria-label="Lifted row factor"></factor-dial>
       </div>
       <game-hud id="hud"></game-hud>
     </div>
 
     <div id="toolbar">
-      <button id="btn-scale" class="op">×k<small>Scale mode</small></button>
       <button id="btn-lift" class="op">→<small>Lift row</small></button>
       <button id="btn-swap-up" class="nav">▲<small>Swap up</small></button>
       <button id="btn-swap-down" class="nav">▼<small>Swap down</small></button>
@@ -40,7 +40,7 @@
     </div>
 
     <footer id="help-line">
-      Tap to select · swipe ↑/↓ swap · swipe → shift · swipe ← apply/cancel · keys: ↑↓ select · PgUp/PgDn numerator · Shift+PgUp/PgDn denominator · − negate · M scale · Enter apply · Esc cancel · U undo · H hint
+      Tap to select · swipe ↑/↓ swap · swipe → shift · swipe ← apply/cancel · keys: ↑↓ select · PgUp/PgDn numerator · Shift+PgUp/PgDn denominator · − negate · Enter apply lift · Esc cancel · U undo · H hint
     </footer>
 
     <win-overlay id="win-overlay"></win-overlay>
@@ -59,21 +59,20 @@
         <p><b>Legal moves</b> (elementary row operations):</p>
         <ul>
           <li><b>Swap</b> two rows,</li>
-          <li><b>Multiply</b> a row by a non-zero number k: adjust the numerator and denominator on the two scrolling dials, press <kbd>M</kbd>, then <kbd>Enter</kbd> to apply (<kbd>Esc</kbd> cancels),</li>
+          <li><b>Multiply</b> a row by a non-zero number k: adjust the numerator and denominator on the left factor dial; the selected row updates immediately,</li>
           <li><b>Add</b> one row to another: lift a row with <kbd>→</kbd>, pick the multiplier on the rail (the lifted copy updates live, always from the original row), align it with the target row (<kbd>↑</kbd>/<kbd>↓</kbd>), then press <kbd>Enter</kbd>.</li>
         </ul>
         <p><b>Keyboard:</b></p>
         <ul class="keys">
           <li><kbd>↑</kbd> <kbd>↓</kbd> or <kbd>K</kbd> <kbd>J</kbd> — select row</li>
           <li><kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> — move the selected row</li>
-          <li><kbd>PgUp</kbd> <kbd>PgDn</kbd> — change the numerator on the left dial</li>
-          <li><kbd>Shift</kbd>+<kbd>PgUp</kbd>/<kbd>PgDn</kbd> — change the denominator on the right dial</li>
-          <li><kbd>−</kbd> — flip the numerator's sign</li>
-          <li><kbd>M</kbd> — start in-place scaling of the selected row; <kbd>Enter</kbd> applies, <kbd>Esc</kbd> cancels</li>
-          <li><kbd>→</kbd> — lift the selected row to the right; the lifted copy is always the original row × the selected factor; <kbd>↑</kbd>/<kbd>↓</kbd> align it with a target row and <kbd>Enter</kbd> adds it (<kbd>Esc</kbd> or <kbd>←</kbd> cancels)</li>
+          <li><kbd>PgUp</kbd> <kbd>PgDn</kbd> — change the numerator on the active factor dial</li>
+          <li><kbd>Shift</kbd>+<kbd>PgUp</kbd>/<kbd>PgDn</kbd> — change the active dial's denominator</li>
+          <li><kbd>−</kbd> — flip the active factor's sign</li>
+          <li><kbd>→</kbd> — lift the selected row to the right; the right drawer opens and its dial sets the lifted copy's factor; <kbd>↑</kbd>/<kbd>↓</kbd> align it with a target row and <kbd>Enter</kbd> adds it (<kbd>Esc</kbd> or <kbd>←</kbd> cancels)</li>
           <li><kbd>U</kbd> undo · <kbd>H</kbd> hint · <kbd>R</kbd> restart · <kbd>Esc</kbd> cancel / reset k</li>
         </ul>
-        <p><b>Touch:</b> tap a row to select it, swipe up/down to swap rows, swipe right to shift (lift) a row, then swipe left on the original row to cancel or on another row to apply. Drag or flick the left dial to choose the numerator (−20…−1 or 1…20) and the right dial to choose the denominator (1…20); the needle marks the selected value and the scale snaps to it when released. Tap a visible number to jump straight to it. The toolbar ×k button starts/applies in-place scaling. While a row is lifted, tap the target row to apply the lifted copy.</p>
+        <p><b>Touch:</b> tap a row to select it, swipe up/down to swap rows, swipe right to shift (lift) a row, then swipe left on the original row to cancel or on another row to apply. The left drawer is open by default: drag or flick its numerator (−20…−1 or 1…20) and denominator (1…20) dials and the selected row scales immediately. Lifting a row closes the left drawer and opens the right one; its dials set the lifted copy's factor, which applies to the preview immediately. Needles mark the selected values, the scales snap when released, and tapping a visible number jumps to it. While a row is lifted, tap the target row to apply the lifted copy.</p>
       </div>
       <button class="big-btn tutorial-close" type="button">Start playing</button>
     </div>

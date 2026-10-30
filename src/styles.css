@@ -190,12 +190,6 @@ rref-board[disabled] { pointer-events: none; }
 .cell.src { box-shadow: 0 0 0 3px var(--info); }
 .cell.target { box-shadow: 0 0 0 3px var(--ok); }
 .cell.hint { box-shadow: 0 0 0 3px #f1c40f; }
-.cell.scale { animation: scale-pulse 0.9s ease infinite; }
-
-@keyframes scale-pulse {
-  0%, 100% { box-shadow: 0 0 0 3px var(--accent); }
-  50% { box-shadow: 0 0 0 7px var(--accent); }
-}
 
 .badge { min-height: 20px; font-size: 14px; text-align: center; }
 .badge.ref { color: #6fbf73; }
@@ -222,15 +216,42 @@ factor-dial {
   touch-action: none;
 }
 
+factor-dial.drawer {
+  width: calc(var(--dial-width, 56px) * 2 + var(--dial-gap, 6px));
+  overflow: hidden;
+  opacity: 1;
+  transition: width 0.22s ease, opacity 0.16s ease, transform 0.22s ease;
+}
+
+factor-dial.drawer-right {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+}
+
+factor-dial.drawer:not([open]) {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+factor-dial.drawer-left:not([open]) { transform: translateX(-10px); }
+factor-dial.drawer-right:not([open]) { transform: translateX(10px); }
+
 factor-dial[disabled] {
   pointer-events: none;
   opacity: 0.6;
 }
 
+factor-dial[disabled].drawer:not([open]) { opacity: 0; }
+
 .dial-pair {
   display: flex;
+  flex: 0 0 auto;
   align-items: stretch;
   gap: var(--dial-gap, 6px);
+  width: calc(var(--dial-width, 56px) * 2 + var(--dial-gap, 6px));
   height: 100%;
   min-height: 0;
 }
@@ -334,7 +355,7 @@ number-dial:focus-visible {
 
 #toolbar {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 

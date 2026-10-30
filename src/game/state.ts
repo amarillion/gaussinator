@@ -62,12 +62,13 @@ export class Game {
 	rows: Matrix;
 	order: number[];
 	cursorPos = 0;
-	/** Selected numerator; the factor is `kNumerator / kDenominator`. */
+	/** Left-drawer factor for scaling the selected row: `kNumerator / kDenominator`. */
 	kNumerator = K_DEFAULT_NUMERATOR;
-	/** Selected denominator, always in [K_DENOMINATOR_MIN, K_DENOMINATOR_MAX]. */
+	/** Left-drawer denominator, always in [K_DENOMINATOR_MIN, K_DENOMINATOR_MAX]. */
 	kDenominator = K_DEFAULT_DENOMINATOR;
-	/** In-place scaling mode, started with M and confirmed with Enter. */
-	pendingScale = false;
+	/** Right-drawer factor applied to the lifted row preview. */
+	liftNumerator = K_DEFAULT_NUMERATOR;
+	liftDenominator = K_DEFAULT_DENOMINATOR;
 	lift: Lift | null = null;
 	history: Snapshot[] = [];
 	moves = 0;
@@ -99,9 +100,14 @@ export class Game {
 		return this.generated.start;
 	}
 
-	/** Current exact multiplier: selected numerator divided by denominator. */
+	/** Exact factor shown in the left drawer. */
 	get k(): Rational {
 		return new Rational(BigInt(this.kNumerator), BigInt(this.kDenominator));
+	}
+
+	/** Exact factor shown in the right drawer. */
+	get liftK(): Rational {
+		return new Rational(BigInt(this.liftNumerator), BigInt(this.liftDenominator));
 	}
 
 	displayMatrix(): Matrix {
@@ -116,48 +122,109 @@ export class Game {
 		return isRREF(this.displayMatrix());
 	}
 
-	/** Set both dials, clamping to their legal range. The lift follows at once. */
-	setK(numerator: number, denominator: number): void {
-		this.kNumerator = clampNumerator(numerator);
-		this.kDenominator = clamp(Math.round(denominator), K_DENOMINATOR_MIN, K_DENOMINATOR_MAX);
-		this.syncLiftFactor();
+	/**
+	 * Left drawer: choose a factor and immediately scale the selected row by
+	 * the ratio from the previous factor, so scrubbing feels direct.
+	 */
+	setK(numerator: number, denominator: number): boolean {
+		if (this.won || this.lift) return false;
+		const nextNumerator = clampNumerator(numerator);
+		const nextDenominator = clamp(Math.round(denominator), K_DENOMINATOR_MIN, K_DENOMINATOR_MAX);
+		const next = new Rational(BigInt(nextNumerator), BigInt(nextDenominator));
+		const previous = this.k;
+		if (next.equals(previous)) return false;
+
+		this.pushHistory();
+		scaleRow(this.rows, this.order[this.cursorPos], next.div(previous));
+		this.kNumerator = nextNumerator;
+		this.kDenominator = nextDenominator;
+		this.moves++;
+		this.hintText = null;
+		this.checkWin();
+		return true;
 	}
 
-	/** PgUp/PgDn: move the numerator by delta, skipping zero. */
-	moveNumerator(delta: number): void {
-		if (this.won) return;
-		const next = this.kNumerator + delta;
-		this.setK(clampNumerator(next, delta), this.kDenominator);
+	/** PgUp/PgDn: move the left-drawer numerator by delta, skipping zero. */
+	moveNumerator(delta: number): boolean {
+		if (this.won || this.lift) return false;
+		return this.setK(clampNumerator(this.kNumerator + delta, delta), this.kDenominator);
 	}
 
-	/** Shift+PgUp/Shift+PgDn: move the denominator by delta. */
-	moveDenominator(delta: number): void {
-		if (this.won) return;
-		this.setK(this.kNumerator, this.kDenominator + delta);
+	/** Shift+PgUp/Shift+PgDn: move the left-drawer denominator by delta. */
+	moveDenominator(delta: number): boolean {
+		if (this.won || this.lift) return false;
+		return this.setK(this.kNumerator, this.kDenominator + delta);
 	}
 
-	/** Minus key: toggle the sign of the current factor. */
-	toggleKSign(): void {
-		if (this.won) return;
-		this.setK(-this.kNumerator, this.kDenominator);
+	/** Minus key: flip the left-drawer numerator. */
+	toggleKSign(): boolean {
+		if (this.won || this.lift) return false;
+		return this.setK(-this.kNumerator, this.kDenominator);
 	}
 
+	/** Reset the left drawer to 1/1 without changing the row. */
 	resetK(): void {
-		this.setK(K_DEFAULT_NUMERATOR, K_DEFAULT_DENOMINATOR);
+		this.kNumerator = K_DEFAULT_NUMERATOR;
+		this.kDenominator = K_DEFAULT_DENOMINATOR;
+	}
+
+	/** Right drawer: change the lifted row's live multiplier. */
+	setLiftK(numerator: number, denominator: number): boolean {
+		if (this.won || !this.lift) return false;
+		const nextNumerator = clampNumerator(numerator);
+		const nextDenominator = clamp(Math.round(denominator), K_DENOMINATOR_MIN, K_DENOMINATOR_MAX);
+		const next = new Rational(BigInt(nextNumerator), BigInt(nextDenominator));
+		if (next.equals(this.liftK)) return false;
+		this.liftNumerator = nextNumerator;
+		this.liftDenominator = nextDenominator;
+		this.syncLiftFactor();
+		return true;
+	}
+
+	/** PgUp/PgDn while lifted: move the right-drawer numerator. */
+	moveLiftNumerator(delta: number): boolean {
+		if (this.won || !this.lift) return false;
+		return this.setLiftK(clampNumerator(this.liftNumerator + delta, delta), this.liftDenominator);
+	}
+
+	/** Shift+PgUp/Shift+PgDn while lifted: move the right-drawer denominator. */
+	moveLiftDenominator(delta: number): boolean {
+		if (this.won || !this.lift) return false;
+		return this.setLiftK(this.liftNumerator, this.liftDenominator + delta);
+	}
+
+	/** Minus key while lifted: flip the right-drawer numerator. */
+	toggleLiftSign(): boolean {
+		if (this.won || !this.lift) return false;
+		return this.setLiftK(-this.liftNumerator, this.liftDenominator);
+	}
+
+	/** Reset the right drawer to 1/1. */
+	resetLiftK(): void {
+		this.liftNumerator = K_DEFAULT_NUMERATOR;
+		this.liftDenominator = K_DEFAULT_DENOMINATOR;
+	}
+
+	setCursor(pos: number): void {
+		const next = clamp(pos, 0, this.n - 1);
+		if (next === this.cursorPos) return;
+		this.resetK();
+		this.cursorPos = next;
 	}
 
 	moveCursor(delta: number): void {
-		this.cursorPos = clamp(this.cursorPos + delta, 0, this.n - 1);
+		this.setCursor(this.cursorPos + delta);
 	}
 
 	liftRow(): boolean {
 		if (this.won || this.lift) return false;
-		this.pendingScale = false;
+		this.resetK();
+		this.resetLiftK();
 		this.lift = {
 			sourceId: this.order[this.cursorPos],
 			sourcePos: this.cursorPos,
 			targetPos: this.cursorPos,
-			factor: this.k,
+			factor: this.liftK,
 		};
 		return true;
 	}
@@ -182,37 +249,15 @@ export class Game {
 		addMultiple(this.rows, l.sourceId, targetId, l.factor);
 		this.cursorPos = l.targetPos;
 		this.lift = null;
+		this.resetLiftK();
 		this.finishMove();
 		return true;
 	}
 
 	cancelLift(): void {
 		this.lift = null;
-	}
-
-	/** M key: begin in-place scaling of the cursor row with the rail factor. */
-	startScaleMode(): boolean {
-		if (this.won || this.lift || this.pendingScale) return false;
-		this.pendingScale = true;
-		return true;
-	}
-
-	cancelScaleMode(): boolean {
-		if (!this.pendingScale) return false;
-		this.pendingScale = false;
-		return true;
-	}
-
-	/** Enter key while `pendingScale`: scale the cursor row by the rail factor. */
-	applyScale(): boolean {
-		if (this.won || !this.pendingScale) return false;
-		const k = this.k;
-		if (k.isZero()) return false;
-		this.pushHistory();
-		scaleRow(this.rows, this.order[this.cursorPos], k);
-		this.pendingScale = false;
-		this.finishMove();
-		return true;
+		this.resetLiftK();
+		this.resetK();
 	}
 
 	swapAt(pos: number, delta: number): boolean {
@@ -240,10 +285,10 @@ export class Game {
 		this.moves = s.moves;
 		this.cursorPos = s.cursorPos;
 		this.lift = null;
-		this.pendingScale = false;
 		this.won = false;
 		this.newRecord = false;
 		this.resetK();
+		this.resetLiftK();
 		this.hintText = null;
 		return true;
 	}
@@ -255,15 +300,15 @@ export class Game {
 		this.history = [];
 		this.moves = 0;
 		this.lift = null;
-		this.pendingScale = false;
 		this.won = false;
 		this.newRecord = false;
 		this.resetK();
+		this.resetLiftK();
 		this.hintText = null;
 	}
 
 	private syncLiftFactor(): void {
-		if (this.lift) this.lift.factor = this.k;
+		if (this.lift) this.lift.factor = this.liftK;
 	}
 
 	private pushHistory(): void {
@@ -275,18 +320,22 @@ export class Game {
 		});
 	}
 
+	private checkWin(): void {
+		if (!this.isRREF()) return;
+		this.won = true;
+		const prev = this.best;
+		if (prev === null || this.moves < prev) {
+			this.best = this.moves;
+			this.newRecord = true;
+			this.onBest?.(this.moves);
+		}
+	}
+
 	private finishMove(): void {
 		this.moves++;
 		this.resetK();
+		this.resetLiftK();
 		this.hintText = null;
-		if (this.isRREF()) {
-			this.won = true;
-			const prev = this.best;
-			if (prev === null || this.moves < prev) {
-				this.best = this.moves;
-				this.newRecord = true;
-				this.onBest?.(this.moves);
-			}
-		}
+		this.checkWin();
 	}
 }

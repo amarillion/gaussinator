@@ -25,7 +25,8 @@ export class GameApp extends HTMLElement {
 	private soundOn = true;
 
 	private board!: RrefBoard;
-	private dial: FactorDial | null = null;
+	private scaleDial: FactorDial | null = null;
+	private liftDial: FactorDial | null = null;
 	private hud!: GameHud;
 	private stats!: GameStats;
 	private winOverlay!: WinOverlay;
@@ -35,7 +36,8 @@ export class GameApp extends HTMLElement {
 
 	connectedCallback(): void {
 		this.board = this.querySelector<RrefBoard>("rref-board")!;
-		this.dial = this.querySelector<FactorDial>("factor-dial");
+		this.scaleDial = this.querySelector<FactorDial>("#scale-dial");
+		this.liftDial = this.querySelector<FactorDial>("#lift-dial");
 		this.hud = this.querySelector<GameHud>("game-hud")!;
 		this.stats = this.querySelector<GameStats>("game-stats")!;
 		this.winOverlay = this.querySelector<WinOverlay>("win-overlay")!;
@@ -80,20 +82,6 @@ export class GameApp extends HTMLElement {
 	}
 
 	private bindButtons(): void {
-		this.bind("btn-scale", () => {
-			const g = this.game;
-			if (g.pendingScale) {
-				if (g.applyScale()) sfx.scale();
-				else sfx.invalid();
-			} else if (g.lift) {
-				sfx.invalid();
-			} else if (g.startScaleMode()) {
-				sfx.select();
-			} else {
-				sfx.invalid();
-			}
-			this.afterAction();
-		});
 		this.bind("btn-lift", () => {
 			if (this.game.liftRow()) sfx.lift();
 			else sfx.invalid();
@@ -104,8 +92,6 @@ export class GameApp extends HTMLElement {
 			if (g.lift) {
 				g.moveLift(-1);
 				sfx.select();
-			} else if (g.pendingScale) {
-				sfx.invalid();
 			} else {
 				if (g.swapCursor(-1)) sfx.move();
 				else sfx.invalid();
@@ -117,8 +103,6 @@ export class GameApp extends HTMLElement {
 			if (g.lift) {
 				g.moveLift(1);
 				sfx.select();
-			} else if (g.pendingScale) {
-				sfx.invalid();
 			} else {
 				if (g.swapCursor(1)) sfx.move();
 				else sfx.invalid();
@@ -137,10 +121,16 @@ export class GameApp extends HTMLElement {
 	}
 
 	private wireEvents(): void {
-		this.dial?.addEventListener("factor-change", e => {
+		this.scaleDial?.addEventListener("factor-change", e => {
 			if (this.game.won) return;
 			const { numerator, denominator } = (e as CustomEvent<{ numerator: number, denominator: number }>).detail;
-			this.game.setK(numerator, denominator);
+			if (this.game.setK(numerator, denominator)) sfx.scale();
+			this.afterAction();
+		});
+		this.liftDial?.addEventListener("factor-change", e => {
+			if (this.game.won) return;
+			const { numerator, denominator } = (e as CustomEvent<{ numerator: number, denominator: number }>).detail;
+			if (this.game.setLiftK(numerator, denominator)) sfx.select();
 			this.afterAction();
 		});
 
@@ -157,7 +147,7 @@ export class GameApp extends HTMLElement {
 					else sfx.invalid();
 				}
 			} else {
-				this.game.cursorPos = pos;
+				this.game.setCursor(pos);
 				sfx.select();
 			}
 			this.afterAction();
@@ -170,10 +160,8 @@ export class GameApp extends HTMLElement {
 				// Swipe right shifts (lifts) the swiped row.
 				if (this.game.lift) {
 					sfx.invalid();
-				} else if (this.game.pendingScale) {
-					sfx.invalid();
 				} else {
-					this.game.cursorPos = pos;
+					this.game.setCursor(pos);
 					if (this.game.liftRow()) sfx.lift();
 					else sfx.invalid();
 				}
@@ -204,10 +192,8 @@ export class GameApp extends HTMLElement {
 			if (this.game.lift) {
 				this.game.moveLift(delta);
 				sfx.select();
-			} else if (this.game.pendingScale) {
-				sfx.invalid();
 			} else {
-				this.game.cursorPos = pos;
+				this.game.setCursor(pos);
 				if (this.game.swapCursor(delta)) sfx.move();
 				else sfx.invalid();
 			}
@@ -259,12 +245,15 @@ export class GameApp extends HTMLElement {
 			order: this.game.order,
 			cursorPos: this.game.cursorPos,
 			lift: this.game.lift,
-			pendingScale: this.game.pendingScale,
 			hintRows: this.hintRows,
 		});
 		this.board.toggleAttribute("disabled", this.game.won);
-		this.dial?.setSelection(this.game.kNumerator, this.game.kDenominator);
-		this.dial?.toggleAttribute("disabled", this.game.won);
+		this.scaleDial?.setSelection(this.game.kNumerator, this.game.kDenominator);
+		this.scaleDial?.toggleAttribute("disabled", this.game.won);
+		this.scaleDial?.toggleAttribute("open", !this.game.lift);
+		this.liftDial?.setSelection(this.game.liftNumerator, this.game.liftDenominator);
+		this.liftDial?.toggleAttribute("disabled", this.game.won);
+		this.liftDial?.toggleAttribute("open", !!this.game.lift);
 		this.stats.update(this.game);
 		this.hud.update(this.game);
 		this.hud.setHint(this.game.hintText);
@@ -336,25 +325,38 @@ export class GameApp extends HTMLElement {
 		if (key === " ") e.preventDefault();
 		if (key === "Backspace" || key === "/") e.preventDefault();
 
-		// Factor dial selection: PgUp/PgDn = numerator, Shift+PgUp/PgDn = denominator.
+		// Active factor drawer: PgUp/PgDn = numerator, Shift = denominator.
 		if (key === "PageUp") {
-			if (e.shiftKey) game.moveDenominator(-1);
-			else game.moveNumerator(-1);
+			if (game.lift) {
+				if (e.shiftKey) game.moveLiftDenominator(-1);
+				else game.moveLiftNumerator(-1);
+			} else if (e.shiftKey) {
+				game.moveDenominator(-1);
+			} else {
+				game.moveNumerator(-1);
+			}
 			sfx.select();
 			e.preventDefault();
 			this.afterAction();
 			return;
 		}
 		if (key === "PageDown") {
-			if (e.shiftKey) game.moveDenominator(1);
-			else game.moveNumerator(1);
+			if (game.lift) {
+				if (e.shiftKey) game.moveLiftDenominator(1);
+				else game.moveLiftNumerator(1);
+			} else if (e.shiftKey) {
+				game.moveDenominator(1);
+			} else {
+				game.moveNumerator(1);
+			}
 			sfx.select();
 			e.preventDefault();
 			this.afterAction();
 			return;
 		}
 		if (key === "-") {
-			game.toggleKSign();
+			if (game.lift) game.toggleLiftSign();
+			else game.toggleKSign();
 			sfx.select();
 			e.preventDefault();
 			this.afterAction();
@@ -362,10 +364,7 @@ export class GameApp extends HTMLElement {
 		}
 
 		if (key === "Escape") {
-			if (game.pendingScale) {
-				game.cancelScaleMode();
-				sfx.select();
-			} else if (game.lift) {
+			if (game.lift) {
 				game.cancelLift();
 				sfx.select();
 			} else {
@@ -376,9 +375,8 @@ export class GameApp extends HTMLElement {
 			return;
 		}
 		if (key === "c" || key === "C") {
-			game.cancelLift();
-			game.cancelScaleMode();
-			game.resetK();
+			if (game.lift) game.cancelLift();
+			else game.resetK();
 			e.preventDefault();
 			this.afterAction();
 			return;
@@ -391,13 +389,8 @@ export class GameApp extends HTMLElement {
 				game.moveLift(-1);
 				sfx.select();
 			} else if (e.shiftKey) {
-				if (game.pendingScale) {
-					sfx.invalid();
-				} else if (game.swapCursor(-1)) {
-					sfx.move();
-				} else {
-					sfx.invalid();
-				}
+				if (game.swapCursor(-1)) sfx.move();
+				else sfx.invalid();
 			} else {
 				game.moveCursor(-1);
 				sfx.select();
@@ -411,13 +404,8 @@ export class GameApp extends HTMLElement {
 				game.moveLift(1);
 				sfx.select();
 			} else if (e.shiftKey) {
-				if (game.pendingScale) {
-					sfx.invalid();
-				} else if (game.swapCursor(1)) {
-					sfx.move();
-				} else {
-					sfx.invalid();
-				}
+				if (game.swapCursor(1)) sfx.move();
+				else sfx.invalid();
 			} else {
 				game.moveCursor(1);
 				sfx.select();
@@ -445,25 +433,7 @@ export class GameApp extends HTMLElement {
 			return;
 		}
 
-		// In-place scaling mode: M starts it, Enter applies, Esc cancels.
-		if (key === "m" || key === "M" || key === "*") {
-			if (game.lift) {
-				sfx.invalid();
-			} else if (game.startScaleMode()) {
-				sfx.select();
-			} else {
-				sfx.invalid();
-			}
-			this.afterAction();
-			return;
-		}
 		if (key === "Enter" || key === " ") {
-			if (game.pendingScale) {
-				if (game.applyScale()) sfx.scale();
-				else sfx.invalid();
-				this.afterAction();
-				return;
-			}
 			if (game.lift) {
 				e.preventDefault();
 				if (game.applyLift()) sfx.combine();

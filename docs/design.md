@@ -38,16 +38,17 @@ Legal moves (all are elementary row operations):
 | Move | Math | In-game action |
 | --- | --- | --- |
 | Swap rows | `R_i ↔ R_j` | Move a row up/down; swiping a row on touch |
-| Scale row | `R_i ← k·R_i`, `k ≠ 0` | Pick the numerator and denominator on the two scrolling dials, press `M`, then `Enter` (`Esc` cancels) |
-| Combine | `R_j ← R_j + k·R_i`, `i ≠ j`, `k ≠ 0` | Lift row `i` with `→`, pick the numerator/denominator on the dials (the lifted copy updates live, always relative to the original row), align with row `j` (`↑`/`↓`), press `Enter` |
+| Scale row | `R_i ← k·R_i`, `k ≠ 0` | Adjust the left factor drawer; the selected row is scaled immediately |
+| Combine | `R_j ← R_j + k·R_i`, `i ≠ j`, `k ≠ 0` | Lift row `i` with `→`; the right drawer opens and its factor updates the lifted copy live (always relative to the original row). Align with row `j` (`↑`/`↓`), press `Enter` |
 
-The factor is `numerator / denominator`. The left dial scrolls through
-`-20…-1` and `1…20`; the right dial scrolls through denominators `1…20` shown as
-`1/1…1/20`. A centered needle marks the selected value, and the scale snaps to
-the nearest entry when a drag or flick slows below the tuned threshold.
-`PgUp`/`PgDn` move the numerator, `Shift+PgUp`/`Shift+PgDn` move the
-denominator, and `-` flips the numerator's sign. Subtracting one row from
-another is the combine operation with negative `k`.
+Each drawer contains a numerator/denominator dial pair. Numerators scroll
+through `-20…-1` and `1…20` (zero is excluded); denominators scroll through
+`1…20`, shown as `1/1…1/20`. A centered needle marks the selected value, and
+the scale snaps to the nearest entry when a drag or flick slows below the
+tuned threshold. `PgUp`/`PgDn` move the active drawer's numerator,
+`Shift+PgUp`/`Shift+PgDn` move its denominator, and `-` flips its numerator's
+sign. Subtracting one row from another is the combine operation with negative
+`k`.
 
 A level is **won** when the matrix is in RREF:
 
@@ -156,15 +157,14 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 | --- | --- |
 | `↑` `↓` (or `K` `J`) | Move the row cursor |
 | `Shift+↑` / `Shift+↓` | Swap cursor row with neighbor |
-| `PgUp` / `PgDn` | Change the numerator on the left dial |
-| `Shift+PgUp` / `Shift+PgDn` | Change the denominator on the right dial |
-| `-` | Flip the numerator's sign |
-| `M` or `*` | Start in-place scaling of the cursor row; `Enter` applies, `Esc` cancels |
-| `→` | Lift a copy of the cursor row to the right side of the board |
+| `PgUp` / `PgDn` | Change the active drawer's numerator |
+| `Shift+PgUp` / `Shift+PgDn` | Change the active drawer's denominator |
+| `-` | Flip the active factor's sign |
+| `→` | Lift a copy of the cursor row to the right side; the right drawer opens |
 | `↑` `↓` while lifted | Align the lifted copy with a target row |
 | `Enter` / `Space` while lifted | Add the lifted copy to the target row |
 | `Esc` / `←` while lifted | Cancel the lift and return the copy |
-| `Esc` / `C` | Cancel lift / scale mode / reset `k` to 1 |
+| `Esc` / `C` | Cancel lift / reset the active factor to 1 |
 | `U` | Undo |
 | `H` | Hint |
 | `R` | Restart level |
@@ -177,11 +177,13 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 - Swipe up/down to swap rows with a neighbor (the 2048 gesture).
 - Swipe right to shift (lift) a row; swipe left on the original row to cancel
   the shift or on another row to apply it.
-- Drag or flick the left dial to choose the numerator (`-20…-1` or `1…20`) and the right
-  dial to choose the denominator (`1…20`). The scale moves under a fixed center
-  needle, carries momentum after a flick, eases to the nearest value, and can
-  be tapped to jump to a visible number. The toolbar `×k` button starts/applies
-  in-place scaling.
+- The left drawer is open by default. Drag or flick its numerator
+  (`-20…-1` or `1…20`) and denominator (`1…20`) dials; the selected row scales
+  immediately. The scale moves under a fixed center needle, carries momentum
+  after a flick, eases to the nearest value, and can be tapped to jump to a
+  visible number.
+- Lifting a row closes the left drawer and opens the right one. Its dials set
+  the lifted copy's factor and update the preview immediately.
 - While a row is lifted, tap the target row to apply the lifted copy.
 
 ### 7.3 State model behind the cursor
@@ -191,14 +193,14 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 - `rows`: matrix indexed by a **stable row id**,
 - `order`: display position → row id,
 - `cursorPos`: selected display position,
-- `kNumerator`: selected non-zero numerator in `[-20, -1] ∪ [1, 20]`,
-- `kDenominator`: selected denominator in `[1, 20]`; the exact factor is
-  `new Rational(kNumerator, kDenominator)`,
-- `pendingScale`: in-place scaling mode started with `M`,
+- `kNumerator` / `kDenominator`: left-drawer factor for scaling the selected
+  row; the numerator is non-zero and in `[-20, -1] ∪ [1, 20]`, the denominator
+  in `[1, 20]`,
+- `liftNumerator` / `liftDenominator`: right-drawer factor for the lifted row,
 - `lift`: `{ sourceId, sourcePos, targetPos, factor } | null` — a row copy
   currently lifted to the right side of the board. Its `factor` is always kept
-  in sync with the dials, so the lifted copy is always the original row × the
-  selected factor.
+  in sync with the right drawer, so the lifted copy is always the original row
+  × the right-drawer factor.
 
 Stable row ids + `order` are what make row-swap animations possible: a tile is
 keyed by row id, so swapping two entries in `order` moves both rows' tiles
@@ -243,9 +245,10 @@ playwright.config.ts  starts Vite on port 4173 for the e2e suite
 2. Keyboard handlers, toolbar buttons, and child-component custom events call
    `Game` methods and then `afterAction()`.
 3. `afterAction()` pushes a fresh view model into the custom elements:
-   `<rref-board>` (tiles, lift rail), `<factor-dial>`, `<game-hud>`,
-   `<game-stats>`, and the overlays; it also clears stale hints when moves
-   changed and shows the win overlay when `game.won`.
+   `<rref-board>` (tiles, lift rail), both `<factor-dial>` drawers,
+   `<game-hud>`, `<game-stats>`, and the overlays; it also opens the left
+   drawer when no row is lifted, opens the right drawer while lifted, clears
+   stale hints when moves changed, and shows the win overlay when `game.won`.
 4. `<rref-board>` positions each tile from `order`, renders rational values,
    and applies CSS classes for cursor/source/target/hint/pop.
 
@@ -303,14 +306,15 @@ Vitest covers (see `*.test.ts`):
   RREF, start is not, `computeRREF(start) == answer`, par > 0, entries bounded.
 - `Hint`: exact suggestions and an **auto-solver** that follows hints to
   completion for every generated level tested.
-- `Game`: numerator/denominator selection and clamping, sign toggling, scale
-  mode (start/apply/cancel), lift/swap, invalid-op rejection, undo (including
-  cursor restore), win detection and best-score callback.
+- `Game`: factor selection/clamping, immediate row scaling, independent
+  left/right drawer factors, sign toggling, lift/swap, invalid-op rejection,
+  undo (including cursor restore), win detection and best-score callback.
 
 Playwright runs Chromium e2e tests in `e2e/` against a Vite dev server. They
-cover the two-dial rendering, exact `2/3` selection and application, negative
-numerators, endpoint clamping, slow-drag snapping, flick momentum, and a narrow
-mobile viewport (`npm run test:e2e`).
+cover drawer switching, immediate left-drawer scaling, right-drawer lift
+factors, exact `2/3` selection, negative numerators, endpoint clamping,
+slow-drag snapping, flick momentum, and a narrow mobile viewport
+(`npm run test:e2e`).
 
 ## 10. Known limitations / future ideas
 

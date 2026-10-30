@@ -22,21 +22,23 @@ describe("computeStars", () => {
 	});
 });
 
-describe("numerator / denominator factor", () => {
-	it("builds exact fractions from the two dials", () => {
+describe("factor drawers", () => {
+	it("starts both drawers at 1/1", () => {
 		const g = new Game(0, 1);
 		expect(g.kNumerator).toBe(1);
 		expect(g.kDenominator).toBe(1);
+		expect(g.liftNumerator).toBe(1);
+		expect(g.liftDenominator).toBe(1);
+	});
+
+	it("builds exact factors and clamps both ranges", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 1, 1 ], [ 1, 1 ] ]);
+		g.order = [ 0, 1 ];
 		g.setK(2, 3);
 		expect(g.k.toString()).toBe("2/3");
 		g.setK(-4, 5);
 		expect(g.k.toString()).toBe("-4/5");
-		g.setK(6, 3);
-		expect(g.k.toString()).toBe("2");
-	});
-
-	it("clamps the numerator to -20..20 and the denominator to 1..20", () => {
-		const g = new Game(0, 1);
 		g.setK(-99, 0);
 		expect(g.kNumerator).toBe(K_NUMERATOR_MIN);
 		expect(g.kDenominator).toBe(K_DENOMINATOR_MIN);
@@ -61,8 +63,22 @@ describe("numerator / denominator factor", () => {
 		expect(g.kNumerator).toBe(1);
 	});
 
+	it("scales the selected row immediately as the left factor changes", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 3, 6 ], [ 0, 1 ] ]);
+		g.order = [ 0, 1 ];
+		g.cursorPos = 0;
+		expect(g.setK(2, 3)).toBe(true);
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
+		expect(g.setK(1, 3)).toBe(true);
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "1", "2" ]);
+		expect(g.moves).toBe(2);
+	});
+
 	it("moves the numerator and denominator independently", () => {
 		const g = new Game(0, 1);
+		g.rows = M([ [ 1, 1 ], [ 1, 1 ] ]);
+		g.order = [ 0, 1 ];
 		g.moveNumerator(2);
 		g.moveDenominator(3);
 		expect(g.k.toString()).toBe("3/4");
@@ -70,74 +86,48 @@ describe("numerator / denominator factor", () => {
 		expect(g.k.toString()).toBe("-1/2");
 	});
 
-	it("keeps the lifted copy in sync with a fractional factor", () => {
+	it("keeps the lifted factor independent from the selected-row factor", () => {
 		const g = new Game(0, 1);
 		g.rows = M([ [ 1, 0 ], [ 2, 1 ] ]);
 		g.order = [ 0, 1 ];
 		g.cursorPos = 0;
-		g.setK(2, 3);
 		g.liftRow();
+		expect(g.lift?.factor.toString()).toBe("1");
+		expect(g.setLiftK(2, 3)).toBe(true);
 		expect(g.lift?.factor.toString()).toBe("2/3");
-		g.setK(-5, 7);
-		expect(g.lift?.factor.toString()).toBe("-5/7");
+		const before = g.rows[0].map(x => x.toString());
+		expect(g.setK(5, 1)).toBe(false);
+		expect(g.rows[0].map(x => x.toString())).toEqual(before);
 	});
 
-	it("scales a row by an exact fraction", () => {
+	it("resets the left factor when the cursor moves to another row", () => {
 		const g = new Game(0, 1);
-		g.rows = M([ [ 3, 6 ], [ 0, 1 ] ]);
+		g.rows = M([ [ 2, 2 ], [ 3, 3 ] ]);
 		g.order = [ 0, 1 ];
-		g.cursorPos = 0;
-		g.setK(2, 3);
-		g.startScaleMode();
-		expect(g.applyScale()).toBe(true);
-		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
+		g.setK(2, 1);
+		expect(g.k.toString()).toBe("2");
+		g.setCursor(1);
+		expect(g.k.toString()).toBe("1");
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "4", "4" ]);
 	});
-
 });
 
 describe("Game", () => {
-	it("toggles negative factors with the minus key", () => {
+	it("toggles the left-drawer sign immediately", () => {
 		const g = new Game(0, 1);
+		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
+		g.order = [ 0, 1 ];
 		g.setK(2, 1);
 		expect(g.k.toString()).toBe("2");
 		g.toggleKSign();
 		expect(g.k.toString()).toBe("-2");
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "-4", "-8" ]);
 		g.toggleKSign();
 		expect(g.k.toString()).toBe("2");
-	});
-
-	it("scales the selected row only after entering scale mode", () => {
-		const g = new Game(0, 1);
-		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
-		g.order = [ 0, 1 ];
-		g.cursorPos = 0;
-		expect(g.applyScale()).toBe(false);
-		expect(g.startScaleMode()).toBe(true);
-		g.setK(2, 1);
-		expect(g.applyScale()).toBe(true);
 		expect(g.rows[0].map(x => x.toString())).toEqual([ "4", "8" ]);
-		expect(g.moves).toBe(1);
-		expect(g.pendingScale).toBe(false);
-		expect(g.k.toString()).toBe("1");
 	});
 
-	it("cancels an active scale mode without changing the board", () => {
-		const g = new Game(0, 1);
-		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
-		g.order = [ 0, 1 ];
-		g.startScaleMode();
-		expect(g.cancelScaleMode()).toBe(true);
-		expect(g.applyScale()).toBe(false);
-		expect(g.moves).toBe(0);
-	});
-
-	it("rejects scale mode while a row is lifted", () => {
-		const g = new Game(0, 1);
-		g.liftRow();
-		expect(g.startScaleMode()).toBe(false);
-	});
-
-	it("lifts a row and the copy always follows the rail factor from the original row", () => {
+	it("lifts a row and applies the right-drawer factor to the copy", () => {
 		const g = new Game(0, 1);
 		g.rows = M([ [ 1, 0 ], [ 2, 1 ] ]);
 		g.order = [ 0, 1 ];
@@ -145,29 +135,29 @@ describe("Game", () => {
 		expect(g.liftRow()).toBe(true);
 		expect(g.lift?.sourceId).toBe(0);
 		expect(g.lift?.sourcePos).toBe(0);
-		expect(g.lift?.factor.toString()).toBe("1");
-		g.setK(2, 1);
+		g.setLiftK(2, 1);
 		expect(g.lift?.factor.toString()).toBe("2");
-		g.setK(3, 1);
+		g.setLiftK(3, 1);
 		expect(g.lift?.factor.toString()).toBe("3"); // absolute, not 2*3
-		g.toggleKSign();
+		g.toggleLiftSign();
 		expect(g.lift?.factor.toString()).toBe("-3");
 	});
 
-	it("applies the lifted copy with the selected factor", () => {
+	it("applies the lifted copy with the right-drawer factor", () => {
 		const g = new Game(0, 1);
 		g.rows = M([ [ 1, 0 ], [ 2, 1 ] ]);
 		g.order = [ 0, 1 ];
 		g.cursorPos = 0;
 		g.liftRow();
-		g.setK(2, 1);
-		g.toggleKSign(); // -2
+		g.setLiftK(2, 1);
+		g.toggleLiftSign(); // -2
 		g.setLiftTarget(1);
 		expect(g.applyLift()).toBe(true);
 		expect(g.rows[1].map(x => x.toString())).toEqual([ "0", "1" ]);
 		expect(g.moves).toBe(1);
 		expect(g.lift).toBeNull();
 		expect(g.cursorPos).toBe(1);
+		expect(g.liftK.toString()).toBe("1");
 	});
 
 	it("rejects applying a lift to its own source row", () => {
@@ -181,22 +171,34 @@ describe("Game", () => {
 		expect(g.lift).not.toBeNull();
 	});
 
-	it("cancels an active lift", () => {
+	it("cancels an active lift and restores both drawers to 1/1", () => {
 		const g = new Game(0, 1);
 		g.liftRow();
+		g.setLiftK(3, 2);
 		expect(g.lift).not.toBeNull();
 		g.cancelLift();
 		expect(g.lift).toBeNull();
+		expect(g.liftK.toString()).toBe("1");
+		expect(g.k.toString()).toBe("1");
+	});
+
+	it("undo restores the row before a live scale", () => {
+		const g = new Game(0, 1);
+		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
+		g.order = [ 0, 1 ];
+		g.setK(2, 1);
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "4", "8" ]);
+		expect(g.undo()).toBe(true);
+		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
+		expect(g.moves).toBe(0);
 	});
 
 	it("undo clears an active lift and restores the previous rows", () => {
 		const g = new Game(0, 1);
 		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
 		g.order = [ 0, 1 ];
-		g.startScaleMode();
 		g.setK(2, 1);
-		g.applyScale();
-		g.cursorPos = 0;
+		g.setCursor(0);
 		g.liftRow();
 		expect(g.lift).not.toBeNull();
 		expect(g.undo()).toBe(true);
@@ -219,9 +221,7 @@ describe("Game", () => {
 		const g = new Game(0, 1);
 		g.rows = M([ [ 2, 4 ], [ 0, 1 ] ]);
 		g.order = [ 0, 1 ];
-		g.startScaleMode();
 		g.setK(2, 1);
-		g.applyScale();
 		expect(g.undo()).toBe(true);
 		expect(g.rows[0].map(x => x.toString())).toEqual([ "2", "4" ]);
 		expect(g.moves).toBe(0);
@@ -240,18 +240,16 @@ describe("Game", () => {
 		expect(g.order).toEqual([ 0, 1 ]);
 	});
 
-	it("detects the win when the matrix reaches RREF", () => {
+	it("detects the win immediately after a live scale reaches RREF", () => {
 		const g = new Game(0, 1);
 		g.rows = M([ [ 2, 0 ], [ 0, 1 ] ]);
 		g.order = [ 0, 1 ];
-		g.startScaleMode();
-		g.setK(1, 2);
-		expect(g.k.toString()).toBe("1/2");
 		let recorded: number | null = null;
 		g.onBest = m => {
 			recorded = m;
 		};
-		expect(g.applyScale()).toBe(true);
+		expect(g.setK(1, 2)).toBe(true);
+		expect(g.k.toString()).toBe("1/2");
 		expect(g.won).toBe(true);
 		expect(g.isRREF()).toBe(true);
 		expect(g.best).toBe(1);

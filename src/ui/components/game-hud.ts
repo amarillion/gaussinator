@@ -26,15 +26,12 @@ export class GameHud extends HTMLElement {
 
 	update(game: Game): void {
 		if (this.modeEl) {
-			if (game.pendingScale) {
-				this.modeEl.textContent = `Scale row ${game.cursorPos + 1} by ${kLabel(game)} — Enter to apply, Esc to cancel`;
-				this.modeEl.className = "mode-label scale";
-			} else if (game.lift) {
-				this.modeEl.textContent = `Lift row ${game.lift.sourcePos + 1} × ${kLabel(game)} → row ${game.lift.targetPos + 1} — Enter to add, Esc to cancel`;
+			if (game.lift) {
+				this.modeEl.textContent = `Lift row ${game.lift.sourcePos + 1} × ${game.lift.factor.toString().replace("-", "−")} → row ${game.lift.targetPos + 1} — right dial, Enter to add, Esc to cancel`;
 				this.modeEl.className = "mode-label lift";
 			} else {
-				this.modeEl.textContent = `k = ${kLabel(game)}`;
-				this.modeEl.className = "mode-label";
+				this.modeEl.textContent = `Scale row ${game.cursorPos + 1} × ${kLabel(game)} — left dial applies immediately`;
+				this.modeEl.className = "mode-label scale";
 			}
 		}
 

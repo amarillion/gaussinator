@@ -11,7 +11,7 @@ decimals).
 
 - Exact `BigInt` rational math — fractions like `-3/4` are shown and combined exactly
 - Three legal row operations: **swap** rows, **scale** a row by a non-zero k, **add k×row** to another row (subtract = negative k)
-- Two side-by-side **scrolling factor dials** pick an exact k = numerator / denominator: the left dial spans -20…-1 and 1…20 and the right dial spans 1/1…1/20, so values like 2/3 are directly selectable; flick to scrub, tap a visible value to jump, and the scale snaps under the center needle
+- Two **factor drawers**, each holding a kinetic numerator/denominator dial pair: the left drawer is open by default and scales the selected row immediately; lifting a row closes it and opens the right drawer, which controls the lifted copy. Numerators are -20…-1 or 1…20, denominators are 1/1…1/20, so values like 2/3 are directly selectable
 - Levels grow from **2×3** to **4×6**, then endless 4×6 boards with deeper scrambles
 - Every level is generated backward from a random RREF, so it is **always solvable**
 - Win detection via exact RREF check, plus an "Echelon form ✓" progress badge
@@ -59,15 +59,14 @@ at the bottom.
 | --- | --- |
 | `↑` `↓` (or `K` `J`) | Select row |
 | `Shift+↑` / `Shift+↓` | Move (swap) the selected row |
-| `PgUp` / `PgDn` | Change the numerator on the left dial |
-| `Shift+PgUp` / `Shift+PgDn` | Change the denominator on the right dial |
-| `-` | Flip the numerator's sign |
-| `M` | Start in-place scaling of the selected row; `Enter` applies, `Esc` cancels |
+| `PgUp` / `PgDn` | Change the active factor drawer's numerator |
+| `Shift+PgUp` / `Shift+PgDn` | Change the active factor drawer's denominator |
+| `-` | Flip the active factor's sign |
 | `→` | Lift a copy of the selected row to the right side (the copy always shows the original row × the selected factor) |
 | `↑` `↓` while lifted | Align the lifted copy with a target row |
 | `Enter` / `Space` while lifted | Add the lifted copy to the aligned target row |
 | `Esc` / `←` while lifted | Cancel the lift and return the copy |
-| `Esc` / `C` | Cancel lift / scale mode / reset `k` to 1 |
+| `Esc` / `C` | Cancel lift / reset the active factor to 1 |
 | `U` / `H` / `R` | Undo / Hint / Restart |
 | `?` | Reopen tutorial |
 | `Enter` / `Space` | Next level after a win |
@@ -77,7 +76,7 @@ at the bottom.
 - **Tap** a row to select it
 - **Swipe** up/down to swap rows with a neighbor
 - **Swipe right** to shift (lift) a row; **swipe left** on the original row to cancel the shift or on another row to apply it
-- **Drag or flick** the left dial to choose the numerator (-20…-1 or 1…20) and the right dial to choose the denominator (1…20); the needle marks the selected value, the scale snaps when released, and tapping a visible number jumps to it. The toolbar `×k` button starts/applies in-place scaling
+- **Drag or flick** the left drawer's dials to scale the selected row immediately; after lifting a row, the right drawer opens and its dials set the lifted copy's factor. Needles mark the selected values, scales snap when released, and tapping a visible number jumps to it
 - While a row is lifted, tap the target row to apply the lifted copy
 
 ## Project structure
@@ -98,7 +97,7 @@ src/
     components/
       game-app.ts     <game-app> root controller component
       rref-board.ts   <rref-board> matrix board + lift rail custom element
-      factor-dial.ts  <factor-dial> numerator + denominator dial pair
+      factor-dial.ts  <factor-dial> numerator + denominator dial pair used by both drawers
       number-dial.ts  <number-dial> kinetic scrolling scale
       dial-tuning.ts  all dial size / momentum / snap constants
       game-hud.ts     <game-hud> mode label, badge, hint box

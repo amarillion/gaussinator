@@ -15,7 +15,6 @@ export interface BoardView {
 	order: number[],
 	cursorPos: number,
 	lift: LiftView | null,
-	pendingScale: boolean,
 	hintRows: number[] | null,
 }
 
@@ -80,10 +79,9 @@ export class RrefBoard extends HTMLElement {
 		// screen without horizontal overflow.
 		const wrap = this.parentElement?.parentElement as HTMLElement | null;
 		const containerW = wrap ? wrap.clientWidth : window.innerWidth;
-		const dial = this.parentElement?.querySelector<HTMLElement>("factor-dial");
-		const dialW = (dial?.offsetWidth || FACTOR_DIAL_WIDTH) + 10; // dial pair + board-row gap
-		// Split the remaining width between the board and its lift rail, so the
-		// board can use the space the old single dial did not need.
+		// One factor drawer is always open; the board and its lift rail split
+		// the remaining width evenly.
+		const dialW = FACTOR_DIAL_WIDTH + 10;
 		const widthBudget = Math.max(96, (containerW - dialW - 8) / 2);
 		const maxH = Math.max(240, window.innerHeight - 330);
 		let tw = Math.max(30, Math.min(widthBudget / m, maxH / n, 108));
@@ -171,13 +169,12 @@ export class RrefBoard extends HTMLElement {
 			const cell = this.cells.get(key)!;
 			this.paintValue(cell, view.rows[r][c], key, this.last);
 
-			cell.classList.remove("cursor", "src", "target", "scale");
+			cell.classList.remove("cursor", "src", "target");
 			if (lift) {
 				cell.classList.toggle("src", pos === lift.sourcePos);
 				cell.classList.toggle("target", pos === lift.targetPos);
 			} else {
 				cell.classList.toggle("cursor", pos === view.cursorPos);
-				cell.classList.toggle("scale", view.pendingScale && pos === view.cursorPos);
 			}
 			cell.classList.toggle("hint", view.hintRows !== null && view.hintRows.includes(pos));
 		}
