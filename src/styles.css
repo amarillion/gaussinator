@@ -112,7 +112,13 @@ rref-board[disabled] { pointer-events: none; }
   pointer-events: none;
 }
 
+.lift-rail.active {
+  pointer-events: auto;
+  touch-action: none;
+}
+
 .lift-rail .tile { pointer-events: none; }
+.lift-rail.active .tile { pointer-events: auto; }
 
 .cell.lift {
   opacity: 0.9;

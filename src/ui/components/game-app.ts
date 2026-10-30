@@ -160,7 +160,36 @@ export class GameApp extends HTMLElement {
 		});
 		this.board.addEventListener("row-swipe", e => {
 			if (this.game.won) return;
-			const { pos, direction } = (e as CustomEvent<{ pos: number, direction: "up" | "down" | "left" | "right" }>).detail;
+			const { pos, direction, fromRail } = (e as CustomEvent<{
+				pos: number,
+				direction: "up" | "down" | "left" | "right",
+				fromRail?: boolean,
+			}>).detail;
+
+			if (fromRail) {
+				if (!this.game.lift) {
+					this.afterAction();
+					return;
+				}
+				if (direction === "up" || direction === "down") {
+					this.game.moveLift(direction === "up" ? -1 : 1);
+					sfx.select();
+				} else if (direction === "left") {
+					if (this.game.lift.sourcePos === this.game.lift.targetPos) {
+						this.game.cancelLift();
+						sfx.select();
+					} else if (this.game.applyLift()) {
+						sfx.combine();
+					} else {
+						sfx.invalid();
+					}
+				} else {
+					this.game.cancelLift();
+					sfx.select();
+				}
+				this.afterAction();
+				return;
+			}
 
 			if (direction === "right") {
 				// Swipe right shifts (lifts) the swiped row.

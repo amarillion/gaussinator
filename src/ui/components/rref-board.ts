@@ -55,8 +55,9 @@ export class RrefBoard extends HTMLElement {
 	private tileH = 54;
 	private gap = 8;
 	private order: number[] = [];
+	private lift: LiftView | null = null;
 
-	private down: { x: number, y: number, pos: number, id: number } | null = null;
+	private down: { x: number, y: number, pos: number, id: number, fromRail: boolean } | null = null;
 	private swiped = false;
 
 	connectedCallback(): void {
@@ -152,7 +153,9 @@ export class RrefBoard extends HTMLElement {
 		this.layout(n, m);
 
 		const lift = view.lift;
+		this.lift = lift;
 		if (this.rail) {
+			this.rail.classList.toggle("active", !!lift);
 			const railW = lift ? m * this.tileW + (m + 1) * this.gap : 0;
 			this.rail.style.width = `${railW}px`;
 		}
@@ -219,11 +222,32 @@ export class RrefBoard extends HTMLElement {
 
 	private readonly onPointerDown = (e: PointerEvent): void => {
 		if (this.hasAttribute("disabled")) return;
-		const tile = (e.target as HTMLElement).closest<HTMLElement>(".tile");
+		const target = e.target as HTMLElement;
+		// The rail is a child of the board, so it shares this gesture surface;
+		// only its pointer-events need toggling when a row is lifted.
+		if (target.closest(".lift-rail")) {
+			if (!this.lift) return;
+			this.down = {
+				x: e.clientX,
+				y: e.clientY,
+				pos: this.lift.targetPos,
+				id: e.pointerId,
+				fromRail: true,
+			};
+			this.swiped = false;
+			return;
+		}
+		const tile = target.closest<HTMLElement>(".tile");
 		if (!tile) return;
 		const rowId = Number(tile.dataset.row);
 		if (!Number.isFinite(rowId)) return;
-		this.down = { x: e.clientX, y: e.clientY, pos: this.order.indexOf(rowId), id: e.pointerId };
+		this.down = {
+			x: e.clientX,
+			y: e.clientY,
+			pos: this.order.indexOf(rowId),
+			id: e.pointerId,
+			fromRail: false,
+		};
 		this.swiped = false;
 	};
 
@@ -235,16 +259,16 @@ export class RrefBoard extends HTMLElement {
 		const ax = Math.abs(dx);
 		if (!this.swiped && ay > 18 && ay > ax * 1.5) {
 			this.swiped = true;
-			this.emit("row-swipe", { pos: this.down.pos, direction: dy < 0 ? "up" : "down" });
+			this.emit("row-swipe", { pos: this.down.pos, direction: dy < 0 ? "up" : "down", fromRail: this.down.fromRail });
 		} else if (!this.swiped && ax > 18 && ax > ay * 1.5) {
 			this.swiped = true;
-			this.emit("row-swipe", { pos: this.down.pos, direction: dx < 0 ? "left" : "right" });
+			this.emit("row-swipe", { pos: this.down.pos, direction: dx < 0 ? "left" : "right", fromRail: this.down.fromRail });
 		}
 	};
 
 	private readonly onPointerUp = (e: PointerEvent): void => {
 		if (!this.down || e.pointerId !== this.down.id) return;
-		if (!this.swiped) this.emit("row-tap", { pos: this.down.pos });
+		if (!this.swiped && !this.down.fromRail) this.emit("row-tap", { pos: this.down.pos });
 		this.down = null;
 	};
 
