@@ -23,7 +23,7 @@
 
     <div id="board-wrap">
       <div id="board-row">
-        <factor-dial id="factor-dial" aria-label="Multiplier"></factor-dial>
+        <factor-dial id="factor-dial" aria-label="Factor numerator and denominator"></factor-dial>
         <rref-board id="board" aria-label="Matrix board"></rref-board>
       </div>
       <game-hud id="hud"></game-hud>
@@ -40,7 +40,7 @@
     </div>
 
     <footer id="help-line">
-      Tap to select · swipe ↑/↓ swap · swipe → shift · swipe ← apply/cancel · keys: ↑↓ select · PgUp/PgDn factor · − negate · M scale · Enter apply · Esc cancel · U undo · H hint
+      Tap to select · swipe ↑/↓ swap · swipe → shift · swipe ← apply/cancel · keys: ↑↓ select · PgUp/PgDn numerator · Shift+PgUp/PgDn denominator · − negate · M scale · Enter apply · Esc cancel · U undo · H hint
     </footer>
 
     <win-overlay id="win-overlay"></win-overlay>
@@ -59,20 +59,21 @@
         <p><b>Legal moves</b> (elementary row operations):</p>
         <ul>
           <li><b>Swap</b> two rows,</li>
-          <li><b>Multiply</b> a row by a non-zero number k: pick k on the left rail (<kbd>PgUp</kbd>/<kbd>PgDn</kbd>, <kbd>−</kbd> for negative), press <kbd>M</kbd>, then <kbd>Enter</kbd> to apply (<kbd>Esc</kbd> cancels),</li>
+          <li><b>Multiply</b> a row by a non-zero number k: adjust the numerator and denominator on the two scrolling dials, press <kbd>M</kbd>, then <kbd>Enter</kbd> to apply (<kbd>Esc</kbd> cancels),</li>
           <li><b>Add</b> one row to another: lift a row with <kbd>→</kbd>, pick the multiplier on the rail (the lifted copy updates live, always from the original row), align it with the target row (<kbd>↑</kbd>/<kbd>↓</kbd>), then press <kbd>Enter</kbd>.</li>
         </ul>
         <p><b>Keyboard:</b></p>
         <ul class="keys">
           <li><kbd>↑</kbd> <kbd>↓</kbd> or <kbd>K</kbd> <kbd>J</kbd> — select row</li>
           <li><kbd>Shift</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd> — move the selected row</li>
-          <li><kbd>PgUp</kbd> <kbd>PgDn</kbd> — choose the multiplier on the left rail</li>
-          <li><kbd>−</kbd> — toggle a negative factor</li>
+          <li><kbd>PgUp</kbd> <kbd>PgDn</kbd> — change the numerator on the left dial</li>
+          <li><kbd>Shift</kbd>+<kbd>PgUp</kbd>/<kbd>PgDn</kbd> — change the denominator on the right dial</li>
+          <li><kbd>−</kbd> — flip the numerator's sign</li>
           <li><kbd>M</kbd> — start in-place scaling of the selected row; <kbd>Enter</kbd> applies, <kbd>Esc</kbd> cancels</li>
           <li><kbd>→</kbd> — lift the selected row to the right; the lifted copy is always the original row × the selected factor; <kbd>↑</kbd>/<kbd>↓</kbd> align it with a target row and <kbd>Enter</kbd> adds it (<kbd>Esc</kbd> or <kbd>←</kbd> cancels)</li>
           <li><kbd>U</kbd> undo · <kbd>H</kbd> hint · <kbd>R</kbd> restart · <kbd>Esc</kbd> cancel / reset k</li>
         </ul>
-        <p><b>Touch:</b> tap a row to select it, swipe up/down to swap rows, swipe right to shift (lift) a row, then swipe left on the original row to cancel or on another row to apply. Drag up/down on the left dial to scrub the multiplier (tap a tile to jump to it, ± for negative). The toolbar ×k button starts/applies in-place scaling. While a row is lifted, tap the target row to apply the lifted copy.</p>
+        <p><b>Touch:</b> tap a row to select it, swipe up/down to swap rows, swipe right to shift (lift) a row, then swipe left on the original row to cancel or on another row to apply. Drag or flick the left dial to choose the numerator (−20…20) and the right dial to choose the denominator (1…20); the needle marks the selected value and the scale snaps to it when released. Tap a visible number to jump straight to it. The toolbar ×k button starts/applies in-place scaling. While a row is lifted, tap the target row to apply the lifted copy.</p>
       </div>
       <button class="big-btn tutorial-close" type="button">Start playing</button>
     </div>

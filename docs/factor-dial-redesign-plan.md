@@ -34,11 +34,11 @@ scrollable number dials:
 - [x] **4. Factor dial pair + styling** — compose two number dials side by side,
   report a combined `factor-change`, add needle/inset-shadow styling, and
   adjust the board width budget for the wider control.
-- [ ] **5. App wiring, keyboard, and copy** — wire the new event/model into
+- [x] **5. App wiring, keyboard, and copy** — wire the new event/model into
   `GameApp`, update keyboard controls (`PgUp`/`PgDn` numerator,
   `Shift`+`PgUp`/`PgDn` denominator, `-` sign), hint text, help line, and
   tutorial.
-- [ ] **6. Playwright** — add `@playwright/test`, Chromium config, and e2e tests
+- [x] **6. Playwright** — add `@playwright/test`, Chromium config, and e2e tests
   for rendering, fraction selection, negative numerators, snapping, momentum,
   and a real scale operation.
 - [ ] **7. Validation + docs** — update README/design docs, run
