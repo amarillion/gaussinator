@@ -141,6 +141,11 @@ therefore reverts the whole run. Moving the cursor, starting a lift, swapping,
 combining, or any other completed move ends the run, so later scaling of the
 same row starts a new move.
 
+Swap sequences are coalesced the same way. Consecutive swaps that move the same
+row — including a continuous handle drag or repeated `Shift+↑`/`Shift+↓` — share
+one move and one history snapshot. Moving a different row, scaling, lifting, or
+another completed move starts a new swap run.
+
 ## 6. Hint engine
 
 `getHint` (in `src/game/hint.ts`) computes the exact RREF of the current board,
@@ -180,6 +185,8 @@ involved so the UI can highlight them (and tests can auto-apply hints).
 ### 7.2 Touch
 
 - Tap a row to select it.
+- Drag the handle on the right of a row up/down to reorder it. Handles are
+  hidden while a row is lifted.
 - Swipe up/down to swap rows with a neighbor (the 2048 gesture).
 - Swipe right to shift (lift) a row; swipe left on the original row to cancel
   the shift or on another row to apply it.
@@ -209,6 +216,8 @@ involved so the UI can highlight them (and tests can auto-apply hints).
   in `[1, 20]`,
 - `liftNumerator` / `liftDenominator`: right-drawer factor for the lifted row,
 - `scaleStreakRowId`: the row id whose current run of live scaling shares one
+  move/history snapshot (cleared when the run ends),
+- `swapStreakRowId`: the row id whose current run of swaps shares one
   move/history snapshot (cleared when the run ends),
 - `lift`: `{ sourceId, sourcePos, targetPos, factor } | null` — a row copy
   currently lifted to the right side of the board. Its `factor` is always kept
@@ -259,7 +268,7 @@ playwright.config.ts  starts Vite on port 4173 for the e2e suite
 2. Keyboard handlers, toolbar buttons, and child-component custom events call
    `Game` methods and then `afterAction()`.
 3. `afterAction()` pushes a fresh view model into the custom elements:
-   `<rref-board>` (tiles, lift rail), both `<factor-dial>` drawers,
+   `<rref-board>` (tiles, lift rail, row handles), both `<factor-dial>` drawers,
    `<game-hud>`, `<game-stats>`, and the overlays; it also opens the left
    drawer when no row is lifted, opens the right drawer while lifted, clears
    stale hints when moves changed, and shows the win overlay when `game.won`.
@@ -269,6 +278,8 @@ playwright.config.ts  starts Vite on port 4173 for the e2e suite
 ### 8.2 Rendering and animation
 
 - Each tile is an absolutely positioned `.tile` wrapper containing a `.cell`.
+  Row drag handles are positioned just outside the right edge of the board and
+  follow their row id through swaps; they are hidden while a lift is active.
 - `.tile` owns `transform: translate(x, y)` with a CSS transition — row swaps
   animate as slides.
 - `.cell` owns colors, fraction content, and the `pop` keyframe animation.
@@ -321,15 +332,16 @@ Vitest covers (see `*.test.ts`):
 - `Hint`: exact suggestions and an **auto-solver** that follows hints to
   completion for every generated level tested.
 - `Game`: factor selection/clamping, immediate row scaling, independent
-  left/right drawer factors, scale-run coalescing, sign toggling, lift/swap,
-  invalid-op rejection, undo (including cursor restore), win detection and
-  best-score callback.
+  left/right drawer factors, scale-run and swap-run coalescing, sign toggling,
+  lift/swap, invalid-op rejection, undo (including cursor restore), win
+  detection and best-score callback.
 
 Playwright runs Chromium e2e tests in `e2e/` against a Vite dev server. They
 cover drawer switching, immediate left-drawer scaling, right-drawer lift
-factors, exact `2/3` selection, scale-run move grouping and undo, negative
-numerators, endpoint clamping, slow-drag snapping, flick momentum, and a
-narrow mobile viewport (`npm run test:e2e`).
+factors, exact `2/3` selection, scale-run and swap-run move grouping/undo,
+row-handle dragging and hiding, toolbar simplification, negative numerators,
+endpoint clamping, slow-drag snapping, flick momentum, and a narrow mobile
+viewport (`npm run test:e2e`).
 
 ## 10. Known limitations / future ideas
 

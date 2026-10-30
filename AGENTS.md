@@ -44,7 +44,7 @@ src/game/state.ts       Game class: rows, order, cursorPos, left/right factor
                         drawers, live scale runs, history/undo, moves, par, best
 src/game/hint.ts        getHint: exact next-step suggestion {kind, rows, col, factor}
 src/ui/components/game-app.ts  root controller, keyboard, localStorage, resize
-src/ui/components/rref-board.ts matrix board + lift rail custom element
+src/ui/components/rref-board.ts matrix board + lift rail + row drag handles
 src/ui/components/factor-dial.ts numerator + denominator dial pair for a drawer
 src/ui/components/number-dial.ts kinetic scrolling scale
 src/ui/components/dial-tuning.ts all dial feel/size constants
@@ -78,9 +78,10 @@ playwright.config.ts    e2e config (starts Vite on port 4173)
 6. **Legal ops only.** Scaling requires non-zero k; add-multiple requires
    distinct rows and non-zero k. Keep these guards in both `Game` and the
    `Matrix` helpers. Zero is not a selectable numerator.
-7. **Scale runs score once.** Consecutive live scale changes to the same row
-   must share one move increment and one history snapshot; undo reverts the
-   whole run. Cursor moves/lifts/swaps/combines and other moves end the run.
+7. **Runs score once.** Consecutive live scale changes to the same row must
+   share one move increment and one history snapshot; consecutive swaps that
+   move the same row must do the same. Undo reverts the whole run. Cursor
+   moves, lifts, other row moves, and other operations end the run.
 8. **Animation split.** `.tile` owns `transform: translate(...)` and the
    position transition. `.cell` owns colors/content and the `pop` keyframe.
    Never put a transform animation on `.tile` for content effects, and never
@@ -105,6 +106,8 @@ playwright.config.ts    e2e config (starts Vite on port 4173)
 - The left factor drawer scales the selected row immediately; the right drawer
   opens while a row is lifted and owns the lift factor. Keep the two factors
   independent.
+- Row drag handles sit just right of each row, are keyed by row id so they
+  follow swaps, and hide while a row is lifted.
 - Keyboard handlers must `preventDefault()` on `Arrow*`, `Space`, `Backspace`,
   and `/` to stop page scroll/navigation.
 - Randomness in generation uses the seeded `mulberry32` PRNG so tests are
@@ -121,7 +124,8 @@ playwright.config.ts    e2e config (starts Vite on port 4173)
 - `hint.test.ts` includes an auto-solver; if you change the hint engine, add
   or extend a convergence test over generated levels.
 - UI gesture/dial changes need a Playwright case in `e2e/`; run
-  `npm run test:e2e` before finishing.
+  `npm run test:e2e` before finishing. This includes row-handle dragging,
+  lift-rail swipes, and drawer switching.
 
 ## Adding a feature (typical path)
 

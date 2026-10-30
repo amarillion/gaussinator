@@ -12,14 +12,15 @@ decimals).
 - Exact `BigInt` rational math — fractions like `-3/4` are shown and combined exactly
 - Three legal row operations: **swap** rows, **scale** a row by a non-zero k, **add k×row** to another row (subtract = negative k)
 - Two **factor drawers**, each holding a kinetic numerator/denominator dial pair: the left drawer is open by default and scales the selected row immediately; lifting a row closes it and opens the right drawer, which controls the lifted copy. Numerators are -20…-1 or 1…20, denominators are 1/1…1/20, so values like 2/3 are directly selectable
-- A run of scaling changes on the same row is scored as **one move**, with a single undo step for the whole run
+- A run of scaling changes on the same row is scored as **one move**, with a single undo step for the whole run; a sequence of swaps that moves the same row is grouped the same way
+- Drag **handles on the right of each row** reorder rows (the handles hide while a row is lifted)
 - Levels grow from **2×3** to **4×6**, then endless 4×6 boards with deeper scrambles
 - Every level is generated backward from a random RREF, so it is **always solvable**
 - Win detection via exact RREF check, plus an "Echelon form ✓" progress badge
 - **Undo**, **hint** (exact next-step suggestion with highlighted rows), move counter + **par** score, stars, and per-size best scores
 - 2048-style tile animations, value-tiered colors, negative-value palette
 - WebAudio sound effects (no assets), first-run tutorial overlay
-- Fully playable with **keyboard** or **touch** (tap to select, swipe a row to swap)
+- Fully playable with **keyboard** or **touch** (tap to select, drag row handles, swipe to reorder/lift)
 
 ## Getting started
 
@@ -75,7 +76,8 @@ at the bottom.
 ### Touch
 
 - **Tap** a row to select it
-- **Swipe** up/down to swap rows with a neighbor
+- **Drag** the handle on the right of a row up/down to reorder it; handles hide while a row is lifted
+- **Swipe** up/down to swap rows with a neighbor as an alternate gesture
 - **Swipe right** to shift (lift) a row; **swipe left** on the original row to cancel the shift or on another row to apply it
 - **Drag or flick** the left drawer's dials to scale the selected row immediately; after lifting a row, the right drawer opens and its dials set the lifted copy's factor. Needles mark the selected values, scales snap when released, and tapping a visible number jumps to it
 - While a row is lifted, tap the target row to apply the lifted copy. You can also swipe the lifted rail itself: up/down to align it, left to apply, right to return it
